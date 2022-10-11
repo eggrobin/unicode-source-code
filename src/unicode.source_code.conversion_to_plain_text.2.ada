@@ -65,6 +65,7 @@ package body Unicode.Source_Code.Conversion_To_Plain_Text is
                   when L => exit First_Strong;
                   when R | AL | LRE | RLE | LRI | RLI | FSI =>
                      New_Atom := FSI & New_Atom;
+                     exit First_Strong;
                   when others => null;
                end case;
             end loop First_Strong;
@@ -115,6 +116,7 @@ package body Unicode.Source_Code.Conversion_To_Plain_Text is
             when L => exit Last_Strong;
             when R | AL | PDF | PDI =>
                Converter.Needs_LRM := True;
+               exit Last_Strong;
             when others => null;
          end case;
       end loop Last_Strong;

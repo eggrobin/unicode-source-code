@@ -105,9 +105,7 @@ begin
             Atom_First := Position;
             Atom_Last := Position + 2;
             Position := Position + 3;
-            goto Next_Atom;
-         end if;
-         if Text (Position) = '"' then
+         elsif Text (Position) = '"' then
             Kind := Other;
             Atom_First := Position;
             declare
@@ -146,7 +144,7 @@ begin
                   Terminator_Position := Text'Last + 1;
                end if;
                Atom_Last := Terminator_Position - 1;
-               Position := Terminator_Position + 1;
+               Position := Terminator_Position;
             end;
          else
             for Definition of Simple_Atoms loop
@@ -167,7 +165,6 @@ begin
                end if;
             end loop;
          end if;
-         <<Next_Atom>>
          Append_Atom (Converter, Text (Atom_First .. Atom_Last),
                       (Kind,
                        At_End_Of_Line    => Position > Text'Last or else
@@ -177,5 +174,4 @@ begin
    end loop;
    Put_Line (Text'Length'Wide_Wide_Image);
    Put_Line (Get_Plain_Text (Converter)'Length'Wide_Wide_Image);
-   Put_Line (Get_Plain_Text (Converter));
 end Convert_To_Plain_Text;

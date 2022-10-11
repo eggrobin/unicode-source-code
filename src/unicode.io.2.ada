@@ -2,14 +2,15 @@ with Ada.Sequential_IO;
 with Ada.Strings.UTF_Encoding.Wide_Wide_Strings;
 
 package body Unicode.IO is
+   
+   type Byte is mod 16#100#;
+   for Byte'Size use 8;
+   B : Byte;
+   package Byte_IO is new Ada.Sequential_IO (Byte);
+   use all type Byte_IO.File_Mode;   
 
    function Read_File (Name : String)
                        return Ada.Strings.UTF_Encoding.UTF_String is
-      type Byte is mod 16#100#;
-      for Byte'Size use 8;
-      B : Byte;
-      package Byte_IO is new Ada.Sequential_IO (Byte);
-      use Byte_IO;
       File : Byte_IO.File_Type;
    begin
       Byte_IO.Open (File, In_File, Name);
@@ -23,11 +24,13 @@ package body Unicode.IO is
                   Byte_IO.Read (File, B);
                   Encoded_Text (I) := Character'Val (B); 
                end loop;
+               Byte_Io.Close (File);
                return Encoded_Text;
             end;
          end if;
          Byte_IO.Read (File, B);
       end loop;
+      Byte_Io.Close (File);
       raise Constraint_Error with "File " & Name & " is too big";
    end Read_File;
    
@@ -60,5 +63,21 @@ package body Unicode.IO is
                        return Wide_Wide_String is
      (Ada.Strings.UTF_Encoding.Wide_Wide_Strings.Decode
         (Read_File (Name), Encoding));
+   
+   procedure Write_File (Text       : Wide_Wide_String;
+                         Name       : String;
+                         Encoding   : Ada.Strings.UTF_Encoding.Encoding_Scheme;
+                         Output_BOM : Boolean) is
+      Encoded_Text : constant Ada.Strings.UTF_Encoding.UTF_String :=
+        Ada.Strings.UTF_Encoding.Wide_Wide_Strings.Encode (Text, Encoding,
+                                                           Output_BOM);
+      File : Byte_IO.File_Type;
+   begin
+      Byte_IO.Open (File, Out_File, Name);
+      for Code_Unit of Encoded_Text loop
+         Byte_IO.Write (File, Character'Pos (Code_Unit));
+      end loop;
+      Byte_Io.Close (File);
+   end Write_File;
 
 end Unicode.IO;

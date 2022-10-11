@@ -9,11 +9,16 @@ package Unicode.IO is
    -- Ada.Wide_Wide_Text_IO.
    function Read_File (Name             : String;
                        Default_Encoding : Ada.Strings.UTF_Encoding.Encoding_Scheme;
-                       Actual_Encoding : out Ada.Strings.UTF_Encoding.Encoding_Scheme;
-                       Uses_BOM : out Boolean) return Wide_Wide_String;
+                       Actual_Encoding  : out Ada.Strings.UTF_Encoding.Encoding_Scheme;
+                       Uses_BOM         : out Boolean) return Wide_Wide_String;
    
    function Read_File (Name     : String;
                        Encoding : Ada.Strings.UTF_Encoding.Encoding_Scheme)
                        return Wide_Wide_String;
+   
+   procedure Write_File (Text       : Wide_Wide_String;
+                         Name       : String;
+                         Encoding   : Ada.Strings.UTF_Encoding.Encoding_Scheme;
+                         Output_BOM : Boolean);
 
 end Unicode.IO;

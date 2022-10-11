@@ -1,6 +1,7 @@
 with Ada.Text_IO;
 with Ada.Wide_Wide_Text_IO;
 with Ada.Strings.UTF_Encoding;
+with Ada.Strings.UTF_Encoding.Wide_Wide_Strings;
 with Ada.Strings;
 with Ada.Strings.Wide_Wide_Fixed;
 with Ada.Strings.Wide_Wide_Unbounded;
@@ -84,7 +85,7 @@ procedure Convert_To_Plain_Text is
 
    Text       : Wide_Wide_String :=
                   Unicode.IO.Read_File
-                    ("src/unicode.character_database.2.ada", Ada.Strings.UTF_Encoding.UTF_8,
+                    ("src/test.2.ada", Ada.Strings.UTF_Encoding.UTF_8,
                      Actual_Encoding,
                      Uses_BOM);
 
@@ -172,6 +173,10 @@ begin
                        Allows_LRM_Before => True));
       end;
    end loop;
-   Put_Line (Text'Length'Wide_Wide_Image);
-   Put_Line (Get_Plain_Text (Converter)'Length'Wide_Wide_Image);
+   declare
+      Plain_Text   : constant Wide_Wide_String := Get_Plain_Text (Converter);
+   begin
+      Put_Line (Plain_Text'Length'Wide_Wide_Image);
+      Unicode.IO.Write_File (Plain_Text, "src/test.2.ada", Actual_Encoding, Uses_BOM);
+   end;
 end Convert_To_Plain_Text;

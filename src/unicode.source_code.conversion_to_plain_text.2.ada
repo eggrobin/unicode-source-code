@@ -125,13 +125,12 @@ package body Unicode.Source_Code.Conversion_To_Plain_Text is
          
          if not Properties.At_End_Of_Line then 
             if Unmatched_Embeddings + Unmatched_Isolates > 0 then
-               if Properties.Kind = Comment_Content then
-                  Append (Converter.Plain_Text,
-                          Unmatched_Isolates * PDI &
-                            Unmatched_Embeddings * PDF);
-               else
+               if Properties.Kind /= Comment_Content then
                   raise Constraint_Error;
                end if;
+               Append (Converter.Plain_Text,
+                       Unmatched_Isolates * PDI &
+                         Unmatched_Embeddings * PDF);
                Converter.Needs_LRM := True;
             else
                Last_Strong_Or_Explicit :

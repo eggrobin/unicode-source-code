@@ -1,5 +1,4 @@
 with Ada.Strings.Wide_Wide_Unbounded;
-use Ada.Strings.Wide_Wide_Unbounded;
 
 package Unicode.Source_Code.Conversion_To_Plain_Text is
    
@@ -11,13 +10,12 @@ package Unicode.Source_Code.Conversion_To_Plain_Text is
                           Atom       : Wide_Wide_String;
                           Properties : Atom_Properties);
    
-   
 private
    
    type Source_Code_Converter is
       record
          Needs_LRM  : Boolean := False;
-         Plain_Text : Unbounded_Wide_Wide_String;
+         Plain_Text : Ada.Strings.Wide_Wide_Unbounded.Unbounded_Wide_Wide_String;
       end record;
 
 end Unicode.Source_Code.Conversion_To_Plain_Text;

@@ -1,5 +1,9 @@
+with Ada.Strings.Wide_Wide_Bounded;
+with Ada.Strings.Wide_Wide_Unbounded;
 
 with Unicode.Properties;
+
+use all type Ada.Strings.Wide_Wide_Unbounded.Unbounded_Wide_Wide_String;
 
 use all type Unicode.Properties.Bidi_Class;
 use all type Unicode.Properties.Binary_Property;
@@ -7,6 +11,7 @@ use all type Unicode.Properties.Binary_Property;
 package body Unicode.Source_Code.Conversion_To_Plain_Text is
    
    LRM : constant Code_Point := Code_Point'Val (16#200E#);
+   -- These are functions so that they are overloaded with the Bidi_Class.
    function PDF return Code_Point is (Code_Point'Val (16#202C#));
    function FSI return Code_Point is (Code_Point'Val (16#2068#));
    function PDI return Code_Point is (Code_Point'Val (16#2069#));
@@ -15,11 +20,13 @@ package body Unicode.Source_Code.Conversion_To_Plain_Text is
                             return Wide_Wide_String is
      (To_Wide_Wide_String (Converter.Plain_Text));
    
+   procedure Append_Filtered_Atom (Converter  : in out Source_Code_Converter;
+                                   Atom       : Wide_Wide_String;
+                                   Properties : Atom_Properties);
+   
    procedure Append_Atom (Converter  : in out Source_Code_Converter;
                           Atom       : Wide_Wide_String;
                           Properties : Atom_Properties) is
-      New_Atom : Unbounded_Wide_Wide_String :=
-        To_Unbounded_Wide_Wide_String (Atom);
    begin
       
       if Atom'Length = 0 then
@@ -28,55 +35,74 @@ package body Unicode.Source_Code.Conversion_To_Plain_Text is
       
       if Properties.Kind = White_Space then
          declare
-            Original : Wide_Wide_String := To_Wide_Wide_String (New_Atom);
+            package Bounded_By_Atom_Length is
+              new Ada.Strings.Wide_Wide_Bounded.Generic_Bounded_Length
+                (Atom'Length);
+            Filtered_Atom : Bounded_By_Atom_Length.Bounded_Wide_Wide_String;
          begin
-            New_Atom := Null_Unbounded_Wide_Wide_String;
-            for C of Original loop
+            for C of Atom loop
                if not Get (Default_Ignorable_Code_Point, C) then
-                  Append (New_Atom, C);
+                  Bounded_By_Atom_Length.Append (Filtered_Atom, C);
                end if;
             end loop;
+            Append_Filtered_Atom
+              (Converter,
+               Bounded_By_Atom_Length.To_Wide_Wide_String (Filtered_Atom),
+               Properties);
          end;
+      else
+         Append_Filtered_Atom (Converter, Atom, Properties);
       end if;
+   end Append_Atom;
+   
+   
+   procedure Append_Filtered_Atom (Converter  : in out Source_Code_Converter;
+                                   Atom       : Wide_Wide_String;
+                                   Properties : Atom_Properties) is
+      Prefix_FSI : Boolean := False;
+   begin
 
       if Converter.Needs_LRM then
          if Properties.Allows_LRM_Before then
             Append (Converter.Plain_Text, LRM);
             Converter.Needs_LRM := False;
          else 
-            -- Why isn’t Unbounded_String iterable?
-            First_Strong_Or_Number :
-            for C of To_Wide_Wide_String (New_Atom) loop
+            First_Strong_Or_Number_Or_Explicit :
+            for C of Atom loop
                case Get_Bidi_Class (C) is
                   when R | AL | EN | AN | LRE | RLE | LRI | RLI | FSI =>
                      raise Constraint_Error;
-                  when L => exit First_Strong_Or_Number;
+                  when L => exit First_Strong_Or_Number_Or_Explicit;
                   when others => null;
                end case;
-            end loop First_Strong_Or_Number;
+            end loop First_Strong_Or_Number_Or_Explicit;
          end if;
       end if;
             
-      if Properties.Kind = Comment_Content then
-         if Element (New_Atom, 1) /= FSI then
-            First_Strong :
-            for C of To_Wide_Wide_String (New_Atom) loop
-               case Get_Bidi_Class (C) is
-                  when L => exit First_Strong;
-                  when R | AL | LRE | RLE | LRI | RLI | FSI =>
-                     New_Atom := FSI & New_Atom;
-                     exit First_Strong;
-                  when others => null;
-               end case;
-            end loop First_Strong;
-         end if;
+      if Properties.Kind = Comment_Content and then
+        Atom (Atom'First) /= FSI then
+         First_Strong_Or_Explicit :
+         for C of Atom loop
+            case Get_Bidi_Class (C) is
+               when L => exit First_Strong_Or_Explicit;
+               when R | AL | LRE | RLE | LRI | RLI | FSI =>
+                  Prefix_FSI := True;
+                  exit First_Strong_Or_Explicit;
+               when others => null;
+            end case;
+         end loop First_Strong_Or_Explicit;
       end if;
       
+      if Prefix_FSI then
+         Append (Converter.Plain_Text, FSI);
+      end if;
+      Append (Converter.Plain_Text, Atom);
+      
       declare
-         Unmatched_Isolates   : Natural := 0;
+         Unmatched_Isolates   : Natural := (if Prefix_FSI then 1 else 0);
          Unmatched_Embeddings : Natural := 0;
       begin
-         for C of To_Wide_Wide_String (New_Atom) loop
+         for C of Atom loop
             case Get_Bidi_Class (C) is
                when LRI | RLI | FSI =>
                   Unmatched_Isolates := Unmatched_Isolates + 1;
@@ -97,31 +123,30 @@ package body Unicode.Source_Code.Conversion_To_Plain_Text is
             end case;
          end loop;
          
-         if Unmatched_Embeddings + Unmatched_Isolates > 0 then
-            if not Properties.At_End_Of_Line then
+         if not Properties.At_End_Of_Line then 
+            if Unmatched_Embeddings + Unmatched_Isolates > 0 then
                if Properties.Kind = Comment_Content then
-                  Append (New_Atom,
+                  Append (Converter.Plain_Text,
                           Unmatched_Isolates * PDI &
                             Unmatched_Embeddings * PDF);
                else
                   raise Constraint_Error;
                end if;
+               Converter.Needs_LRM := True;
+            else
+               Last_Strong_Or_Explicit :
+               for C of reverse Atom loop
+                  case Get_Bidi_Class (C) is
+                     when L => exit Last_Strong_Or_Explicit;
+                     when R | AL | PDF | PDI =>
+                        Converter.Needs_LRM := True;
+                        exit Last_Strong_Or_Explicit;
+                     when others => null;
+                  end case;
+               end loop Last_Strong_Or_Explicit;
             end if;
          end if;
       end;
-      
-      Last_Strong :
-      for C of reverse To_Wide_Wide_String (New_Atom) loop
-         case Get_Bidi_Class (C) is
-            when L => exit Last_Strong;
-            when R | AL | PDF | PDI =>
-               Converter.Needs_LRM := True;
-               exit Last_Strong;
-            when others => null;
-         end case;
-      end loop Last_Strong;
-      
-      Append (Converter.Plain_Text, New_Atom);
-   end Append_Atom;
+   end Append_Filtered_Atom;
 
 end Unicode.Source_Code.Conversion_To_Plain_Text;

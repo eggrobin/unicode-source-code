@@ -27,7 +27,7 @@ package body Unicode.Properties is
       Binary_Properties (Property).Set :=
         Binary_Properties (Property).Set or Set;
       for C in Scope.Low .. Scope.High loop
-         Binary_Properties (Property).Values (C) := False;
+         Binary_Properties (Property).Values (C) := True;
       end loop;
    end Process_Binary_Property_Field;
    
@@ -105,7 +105,8 @@ package body Unicode.Properties is
          end loop;
       end Process_Field;
       
-      procedure Process_File is new Unicode.Character_Database.Process_File (Process_Field);
+      procedure Process_File is
+        new Unicode.Character_Database.Process_File (Process_Field);
    begin
       Process_File (File_Name);
    end Enumeration_Properties;
@@ -120,7 +121,9 @@ package body Unicode.Properties is
       "DerivedGeneralCategory.txt",
       Parse_General_Category);
    
-   procedure Process_Binary_Property_File is new Unicode.Character_Database.Process_File (Process_Binary_Property_Field);
+   procedure Process_Binary_Property_File is
+     new Unicode.Character_Database.Process_File
+       (Process_Binary_Property_Field);
 
    function Get_General_Category (C : Code_Point) return General_Category 
                                   renames General_Categories.Value;

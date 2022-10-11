@@ -176,7 +176,7 @@ begin
    declare
       Plain_Text   : constant Wide_Wide_String := Get_Plain_Text (Converter);
    begin
-      Put_Line (Plain_Text'Length'Wide_Wide_Image);
-      Unicode.IO.Write_File (Plain_Text, "src/test.2.ada", Actual_Encoding, Uses_BOM);
+      Unicode.IO.Write_File (Plain_Text, "src/test.fixed.2.ada",
+                             Actual_Encoding, Uses_BOM);
    end;
 end Convert_To_Plain_Text;

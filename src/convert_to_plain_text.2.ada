@@ -35,24 +35,6 @@ procedure Convert_To_Plain_Text is
                 Code_Point'Val (16#85#))) or
      Set_Of (Line_Separator) or Set_Of (Paragraph_Separator);
 
-   -- 2.3 (3/2).
-   Identifier_Start : constant Code_Point_Set :=
-     Set_Of (Uppercase_Letter) or
-     Set_Of (Lowercase_Letter) or
-     Set_Of (Titlecase_Letter) or
-     Set_Of (Modifier_Letter) or
-     Set_Of (Other_Letter) or
-     Set_Of (Letter_Number);
-   -- 2.3 (3.1/3).
-   Identifier_Extend : constant Code_Point_Set :=
-     Set_Of (Nonspacing_Mark) or
-     Set_Of (Spacing_Mark) or
-     Set_Of (Decimal_Number) or
-     Set_Of (Connector_Punctuation);
-
-   Identifier_Characters : constant Code_Point_Set :=
-     Identifier_Start or Identifier_Extend;
-
    -- 2.3 (3/2 .. 5/3). The end of the line is treated separately.
    White_Space_Characters : constant Code_Point_Set :=
      Set_Of (Space_Separator) or

@@ -20,7 +20,7 @@ begin
 
    -- This string literal is wrapped in RLE/PDF.
    Ada.Wide_Wide_Text_IO.Put_Line ("‫YouTube تابعة لشركة Google‬");
-   -- The one below has an RLE, but not PDF.
+   -- The one below has an RLE, but no PDF.
    -- A diagnostic shall be emitted about it.
    Ada.Wide_Wide_Text_IO.Put_Line ("‫YouTube تابعة لشركة Google");
    -- The one below has an unmatched RLE, but it lies between an FSI and the

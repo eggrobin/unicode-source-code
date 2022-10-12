@@ -3,6 +3,8 @@ with Ada.Strings.Wide_Wide_Unbounded;
 
 with Unicode.Properties;
 
+with Ada.Wide_Wide_Text_IO;
+
 use all type Ada.Strings.Wide_Wide_Unbounded.Unbounded_Wide_Wide_String;
 
 use all type Unicode.Properties.Bidi_Class;
@@ -125,13 +127,23 @@ package body Unicode.Source_Code.Conversion_To_Plain_Text is
          
          if not Properties.At_End_Of_Line then 
             if Unmatched_Embeddings + Unmatched_Isolates > 0 then
-               if Properties.Kind /= Comment_Content then
-                  raise Constraint_Error;
+               if Properties.Kind = Comment_Content then
+                  Append (Converter.Plain_Text,
+                          Unmatched_Isolates * PDI & Unmatched_Embeddings * PDF);
+                  Converter.Needs_LRM := True;
+               else
+                  Ada.Wide_Wide_Text_IO.Put_Line
+                    ("Unmatched explicit directional formatting characters " &
+                       "outside a comment:");
+                  for C of Atom loop
+                     if Get (Default_Ignorable_Code_Point, C) then
+                        Ada.Wide_Wide_Text_IO.Put (U_Notation (C));
+                     else
+                        Ada.Wide_Wide_Text_IO.Put (C);
+                     end if;
+                  end loop;
+                  Ada.Wide_Wide_Text_IO.New_Line;
                end if;
-               Append (Converter.Plain_Text,
-                       Unmatched_Isolates * PDI &
-                         Unmatched_Embeddings * PDF);
-               Converter.Needs_LRM := True;
             else
                Last_Strong_Or_Explicit :
                for C of reverse Atom loop

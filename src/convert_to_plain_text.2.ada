@@ -75,7 +75,7 @@ procedure Convert_To_Plain_Text is
      Simple_Atom_Definition :=
        ((White_Space_Atom_Characters, White_Space),
         (Line_Terminators, Line_Termination),
-        (Syntax_Characters, Other),
+        (Syntax_Characters - To_Set ("'-"""), Other),
         (not Syntax_Characters and not Line_Terminators and
                not White_Space_Atom_Characters,
          Other));
@@ -92,85 +92,129 @@ procedure Convert_To_Plain_Text is
    Converter : Source_Code.Conversion_To_Plain_Text.Source_Code_Converter;
 
    Position : Positive := Text'First;
+   function Is_Line_Last (I : Positive) return Boolean is
+     (I = Text'Last or else
+      Is_In (Text (I + 1), Line_Terminators));
 begin
    while Position <= Text'Last loop
       declare
          Remaining_Text : Wide_Wide_String renames Text (Position .. Text'Last);
-         Atom_First     : Positive;
-         Atom_Last      : Positive;
-         Kind           : Unicode.Source_Code.Atom_Kind;
       begin
-         if Text (Position) = ''' and then Position + 2 <= Text'Last and then
-           Text (Position + 2) = ''' then
-            Kind := Other;
-            Atom_First := Position;
-            Atom_Last := Position + 2;
-            Position := Position + 3;
-         elsif Text (Position) = '"' then
-            Kind := Other;
-            Atom_First := Position;
-            declare
-               Terminator_Position : Natural := Atom_First;
-            begin
-               loop
-                  Terminator_Position :=
-                    Index (Remaining_Text, To_Set ('"') or Line_Terminators,
-                           From => Terminator_Position);
-                  if Terminator_Position = 0 then
-                     Terminator_Position := Text'Last + 1;
+         case Text (Position) is
+            when '"' =>
+               Append_Atom (Converter, """",
+                            (Other,
+                             Is_Line_Last (Position),
+                             Allows_LRM_Before => True));
+               Position := Position + 1;
+               for I in Positive range Position .. Text'Last + 1 loop
+                  if Is_Line_Last (I) then
+                     -- Unterminated string literal.
+                     Append_Atom (Converter, Text (Position .. I),
+                                  (Other,
+                                   At_End_Of_Line    => True,
+                                   Allows_LRM_Before => False));
+                     exit;
+                  elsif Text (I) = '"' and then
+                    (I = Text'Last or else Text (I + 1) /= '"') then
+                     Append_Atom (Converter, Text (Position .. I - 1),
+                                  (Other,
+                                   At_End_Of_Line    => False,
+                                   Allows_LRM_Before => False));
+                     Position := I + 1;
+                     Append_Atom (Converter, """",
+                                  (Other,
+                                   Is_Line_Last (Position),
+                                   Allows_LRM_Before => False));
+                     exit;
                   end if;
-                  exit when Terminator_Position >= Text'Last or else
-                    Text (Terminator_Position ..
-                            Terminator_Position + 1) /= """""";
-                  Terminator_Position := Terminator_Position + 1;
                end loop;
-               Atom_Last := Terminator_Position;
-               Position := Terminator_Position + 1;
-            end;
-         elsif Remaining_Text'Length >= 2 and then
-           Remaining_Text (Position .. Position + 1) = "--" then
-            Append_Atom (Converter, "--",
-                         (Other,
-                          At_End_Of_Line    => False,
-                          Allows_Lrm_Before => True));
-            Kind := Comment_Content;
-            Atom_First := Position + 2;
-            declare
-               Terminator_Position : Natural := Atom_First;
-            begin
-               Terminator_Position := Index (Remaining_Text,
-                                             Line_Terminators,
-                                             From => Terminator_Position);
-               if Terminator_Position = 0 then
-                  Terminator_Position := Text'Last + 1;
-               end if;
-               Atom_Last := Terminator_Position - 1;
-               Position := Terminator_Position;
-            end;
-         else
-            for Definition of Simple_Atoms loop
-               if Is_In (Text (Position), Definition.Set) then
-                  Kind := Definition.Kind;
-                  Atom_First := Position;
+            when ''' =>
+               if Remaining_Text'Length >= 3 and then
+                 Text (Position + 2) = ''' then
                   declare
-                     Next_Position : constant Natural :=
-                                       Index (Remaining_Text,
-                                              Test => Outside,
-                                              Set  => Definition.Set);
+                     Literal : constant Wide_Wide_Character :=
+                       Text (Position + 1);
                   begin
-                     Position := (if Next_Position = 0 then Text'Last + 1
-                                  else Next_Position);
+                     Append_Atom (Converter, "'",
+                                  (Other,
+                                   At_End_Of_Line => False,
+                                   Allows_LRM_Before => True));
+                     Append_Atom (Converter, (1 => Literal),
+                                  (Other,
+                                   At_End_Of_Line => False,
+                                   Allows_LRM_Before => False));
+                     Append_Atom (Converter, "'",
+                                  (Other,
+                                   Is_Line_Last (Position + 2),
+                                   Allows_LRM_Before => False));
                   end;
-                  Atom_Last := Position - 1;
-                  exit;
+                  Position := Position + 3;
+               else
+                  Append_Atom (Converter, "'",
+                               (Other,
+                                Is_Line_Last (Position),
+                                Allows_LRM_Before => True));
+                  Position := Position + 1;
                end if;
-            end loop;
-         end if;
-         Append_Atom (Converter, Text (Atom_First .. Atom_Last),
-                      (Kind,
-                       At_End_Of_Line    => Position > Text'Last or else
-                       Is_In (Text (Position), Line_Terminators),
-                       Allows_LRM_Before => True));
+            when '-' =>
+               if Remaining_Text'Length >= 2 and then
+                 Text (Position + 1) = '-' then
+                  Append_Atom (Converter, "--",
+                               (Other,
+                                Is_Line_Last (Position + 1),
+                                Allows_LRM_Before => True));
+                  Position := Position + 2;
+                  declare
+                     End_Of_Line : constant Natural :=
+                       Index (Text, From => Position,
+                              Test       => Inside,
+                              Set        => Line_Terminators);
+                     Comment_Last : constant Positive :=
+                       (if End_Of_Line = 0 then Text'Last
+                        else End_Of_Line - 1);
+                  begin
+                     Append_Atom (Converter, Text (Position .. Comment_Last),
+                                  (Comment_Content,
+                                   At_End_Of_Line    => True,
+                                   Allows_LRM_Before => True));
+                     Position := Comment_Last + 1;
+                  end;
+               else
+                  Append_Atom (Converter, "-",
+                               (Other,
+                                Is_Line_Last (Position),
+                                Allows_LRM_Before => True));
+                  Position := Position + 1;
+               end if;
+            when others =>
+               for Definition of Simple_Atoms loop
+                  if Is_In (Text (Position), Definition.Set) then
+                     declare
+                        Next_Position : constant Natural :=
+                          Index (Remaining_Text,
+                                 Test => Outside,
+                                 Set  => Definition.Set);
+                        Atom_Last     : constant Positive :=
+                          (if Next_Position = 0 then Text'Last
+                           else Next_Position - 1);
+                     begin
+                        -- Note that an LRM is not always allowed here.  For
+                        -- instance, we may be in the middle of a numeric
+                        -- literal, and we do not lex those.  However, this does
+                        -- not matter for this algorithm: whenever a strongly
+                        -- right-to-left character occurs, we always correctly
+                        -- identify the first opportunity to insert an LRM.
+                        Append_Atom (Converter, Text (Position .. Atom_Last),
+                                     (Definition.Kind,
+                                        Is_Line_Last (Atom_Last),
+                                        Allows_LRM_Before => True));
+                        Position := Atom_Last + 1;
+                     end;
+                     exit;
+                  end if;
+               end loop;
+         end case;
       end;
    end loop;
    declare

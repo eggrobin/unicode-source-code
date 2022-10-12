@@ -11,6 +11,8 @@ begin
    --‫متغیر A خالی نیست.
    A.all := A.all + 1;
    A := new א'(2);
+   --متغیر A خالی نیست.
+   I := A.all;
    <<שגיאה>> רשם (הודעה); -- משהו השתבש.
    for Hebrew_Letter in Wide_Character range 'ת' .. 'א' loop
       null;

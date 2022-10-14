@@ -24,10 +24,12 @@ package body Unicode.Source_Code.Conversion_To_Plain_Text is
    
    procedure Append_Filtered_Atom (Converter  : in out Source_Code_Converter;
                                    Atom       : Wide_Wide_String;
+                                   Lookahead  : Code_Point_Lookahead;
                                    Properties : Atom_Properties);
    
    procedure Append_Atom (Converter  : in out Source_Code_Converter;
                           Atom       : Wide_Wide_String;
+                          Lookahead  : Code_Point_Lookahead;
                           Properties : Atom_Properties) is
    begin
       
@@ -50,16 +52,18 @@ package body Unicode.Source_Code.Conversion_To_Plain_Text is
             Append_Filtered_Atom
               (Converter,
                Bounded_By_Atom_Length.To_Wide_Wide_String (Filtered_Atom),
+               Lookahead,
                Properties);
          end;
       else
-         Append_Filtered_Atom (Converter, Atom, Properties);
+         Append_Filtered_Atom (Converter, Atom, Lookahead, Properties);
       end if;
    end Append_Atom;
    
    
    procedure Append_Filtered_Atom (Converter  : in out Source_Code_Converter;
                                    Atom       : Wide_Wide_String;
+                                   Lookahead  : Code_Point_Lookahead;
                                    Properties : Atom_Properties) is
       Prefix_FSI : Boolean := False;
    begin
@@ -125,7 +129,8 @@ package body Unicode.Source_Code.Conversion_To_Plain_Text is
             end case;
          end loop;
          
-         if not Properties.At_End_Of_Line then 
+         if not Lookahead.End_Of_File and then
+           Get_Bidi_Class (Lookahead.Next) /= B then
             if Unmatched_Embeddings + Unmatched_Isolates > 0 then
                if Properties.Kind = Comment_Content then
                   Append (Converter.Plain_Text,

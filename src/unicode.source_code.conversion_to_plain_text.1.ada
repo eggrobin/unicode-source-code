@@ -6,8 +6,19 @@ package Unicode.Source_Code.Conversion_To_Plain_Text is
    
    function Get_Plain_Text (Converter : Source_Code_Converter)
                             return Wide_Wide_String;
+   
+   type Code_Point_Lookahead (End_Of_File : Boolean) is
+      record
+         case End_Of_File is
+            when False =>
+               Next : Code_Point;
+            when others => null;
+         end case;
+      end record;
+   
    procedure Append_Atom (Converter  : in out Source_Code_Converter;
                           Atom       : Wide_Wide_String;
+                          Lookahead  : Code_Point_Lookahead;
                           Properties : Atom_Properties);
    
 private

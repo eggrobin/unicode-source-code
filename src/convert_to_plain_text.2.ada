@@ -77,6 +77,11 @@ procedure Convert_To_Plain_Text is
    function Is_Line_Last (I : Positive) return Boolean is
      (I = Text'Last or else
       Is_In (Text (I + 1), Line_Terminators));
+
+   function Lookahead (From : Positive) return
+     Source_Code.Conversion_To_Plain_Text.Code_Point_Lookahead is
+       (if From = Text'Last then (End_Of_File => True)
+        else (End_Of_File => False, Next => Text (From)));
 begin
    while Position <= Text'Last loop
       declare
@@ -85,29 +90,30 @@ begin
          case Text (Position) is
             when '"' =>
                Append_Atom (Converter, """",
+                            Lookahead (Position),
                             (Other,
-                             Is_Line_Last (Position),
                              Allows_LRM_Before => True));
                Position := Position + 1;
                for I in Positive range Position .. Text'Last + 1 loop
                   if Is_Line_Last (I) then
                      -- Unterminated string literal.
                      Append_Atom (Converter, Text (Position .. I),
+                                  (End_Of_File => True),
                                   (Other,
-                                   At_End_Of_Line    => True,
                                    Allows_LRM_Before => False));
+                     Position := I + 1;
                      exit;
                   elsif Text (I) = '"' and then
                     (I = Text'Last or else Text (I + 1) /= '"') then
                      Append_Atom (Converter, Text (Position .. I - 1),
+                                  Lookahead (I - 1),
                                   (Other,
-                                   At_End_Of_Line    => False,
+                                   Allows_LRM_Before => False));
+                     Append_Atom (Converter, """",
+                                  Lookahead (I),
+                                  (Other,
                                    Allows_LRM_Before => False));
                      Position := I + 1;
-                     Append_Atom (Converter, """",
-                                  (Other,
-                                   Is_Line_Last (Position),
-                                   Allows_LRM_Before => False));
                      exit;
                   end if;
                end loop;
@@ -119,23 +125,23 @@ begin
                        Text (Position + 1);
                   begin
                      Append_Atom (Converter, "'",
+                                  Lookahead (Position),
                                   (Other,
-                                   At_End_Of_Line => False,
                                    Allows_LRM_Before => True));
                      Append_Atom (Converter, (1 => Literal),
+                                  Lookahead (Position + 1),
                                   (Other,
-                                   At_End_Of_Line => False,
                                    Allows_LRM_Before => False));
                      Append_Atom (Converter, "'",
+                                  Lookahead (Position + 2),
                                   (Other,
-                                   Is_Line_Last (Position + 2),
                                    Allows_LRM_Before => False));
                   end;
                   Position := Position + 3;
                else
                   Append_Atom (Converter, "'",
+                               Lookahead (Position),
                                (Other,
-                                Is_Line_Last (Position),
                                 Allows_LRM_Before => True));
                   Position := Position + 1;
                end if;
@@ -143,8 +149,8 @@ begin
                if Remaining_Text'Length >= 2 and then
                  Text (Position + 1) = '-' then
                   Append_Atom (Converter, "--",
+                               Lookahead (Position + 1),
                                (Other,
-                                Is_Line_Last (Position + 1),
                                 Allows_LRM_Before => True));
                   Position := Position + 2;
                   declare
@@ -157,15 +163,15 @@ begin
                         else End_Of_Line - 1);
                   begin
                      Append_Atom (Converter, Text (Position .. Comment_Last),
+                                  Lookahead (Comment_Last),
                                   (Comment_Content,
-                                   At_End_Of_Line    => True,
                                    Allows_LRM_Before => True));
                      Position := Comment_Last + 1;
                   end;
                else
                   Append_Atom (Converter, "-",
+                               Lookahead (Position),
                                (Other,
-                                Is_Line_Last (Position),
                                 Allows_LRM_Before => True));
                   Position := Position + 1;
                end if;
@@ -188,9 +194,9 @@ begin
                         -- right-to-left character occurs, we always correctly
                         -- identify the first opportunity to insert an LRM.
                         Append_Atom (Converter, Text (Position .. Atom_Last),
+                                     Lookahead (Atom_Last),
                                      (Definition.Kind,
-                                        Is_Line_Last (Atom_Last),
-                                        Allows_LRM_Before => True));
+                                      Allows_LRM_Before => True));
                         Position := Atom_Last + 1;
                      end;
                      exit;

@@ -81,7 +81,7 @@ procedure Convert_To_Plain_Text is
    function Lookahead (From : Positive) return
      Source_Code.Conversion_To_Plain_Text.Code_Point_Lookahead is
        (if From = Text'Last then (End_Of_File => True)
-        else (End_Of_File => False, Next => Text (From)));
+        else (End_Of_File => False, Next => Text (From + 1)));
 begin
    while Position <= Text'Last loop
       declare

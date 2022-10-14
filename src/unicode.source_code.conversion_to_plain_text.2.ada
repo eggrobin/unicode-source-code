@@ -31,8 +31,7 @@ package body Unicode.Source_Code.Conversion_To_Plain_Text is
                           Atom       : Wide_Wide_String;
                           Lookahead  : Code_Point_Lookahead;
                           Properties : Atom_Properties) is
-   begin
-      
+   begin      
       if Atom'Length = 0 then
          return;
       end if;
@@ -67,6 +66,11 @@ package body Unicode.Source_Code.Conversion_To_Plain_Text is
                                    Properties : Atom_Properties) is
       Prefix_FSI : Boolean := False;
    begin
+      
+      if Properties.Kind = Line_Termination and then
+        Get_Bidi_Class (Atom (Atom'First)) = B then
+         Converter.Needs_LRM := False;
+      end if;
 
       if Converter.Needs_LRM then
          if Properties.Allows_LRM_Before then

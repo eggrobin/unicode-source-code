@@ -31,10 +31,30 @@ package body Unicode.Character_Database is
    -- This should be computed from the line breaking property, but we need to
    -- bootstrap ourselves somehow.  Use the Unicode support built into the
    -- language.
-   Line_Terminator : constant Code_Point_Set := Get_Line_Terminator_Set; 
+   Line_Terminator : constant Code_Point_Set := Get_Line_Terminator_Set;
      
    function Parse_Code_Point (Hex : Wide_Wide_String) return Code_Point is
      (Code_Point'Val (Natural'Wide_Wide_Value ("16#" & Hex & "#")));
+  
+   function Parse_Sequence (Field : Wide_Wide_String) return Wide_Wide_String is
+      -- When a data field contains a sequence of code points, spaces separate
+      -- the code points.
+      Length : Natural := (if Field = "" then 0
+                           else Count (Field, To_Set (' ')) + 1);
+      Result : Wide_Wide_String (1 .. Length);
+      First  : Positive;
+      Last   : Natural := Field'First - 1;
+   begin
+      for I in Result'Range loop
+         Find_Token
+           (Field,
+            From => Last + 1,
+            Test => Outside, Set => To_Set (' '),
+            First => First, Last => Last);
+         Result (I) := Parse_Code_Point (Field (First .. Last));
+      end loop;
+      return Result;
+   end Parse_Sequence;
    
    function Parse_Range (Field : Wide_Wide_String) return Code_Point_Range is
       I : constant Natural := Index (Field, "..");
@@ -175,11 +195,18 @@ package body Unicode.Character_Database is
                   
                -- 4.2.1: Leading and trailing spaces within a field are not
                -- significant.
-               Field_First := Index_Non_Blank (Line (Field_First .. Field_Last),
-                                               From => Field_First);
-               Field_Last  := Index_Non_Blank (Line (Field_First .. Field_Last),
-                                               Going => Backward,
-                                               From  => Field_Last);
+               declare
+                  Field_With_Spaces : Wide_Wide_String renames 
+                    Line (Field_First .. Field_Last);
+               begin
+                  if Field_With_Spaces /= "" then
+                     Field_Last  := Index_Non_Blank (Field_With_Spaces,
+                                                     Going => Backward);
+                     if Field_Last /= 0 then
+                        Field_First := Index_Non_Blank (Field_With_Spaces);
+                     end if;
+                  end if;
+               end;
                declare
                   Field : Wide_Wide_String renames
                             Line (Field_First .. Field_Last);

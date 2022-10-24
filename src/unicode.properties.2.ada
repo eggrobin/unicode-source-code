@@ -136,8 +136,114 @@ package body Unicode.Properties is
    function Set_Of (Property : Bidi_Class) return Code_Point_Set
                     renames Bidi_Classes.Set_Of;
    
+   type Simple_Mapping is array (Code_Point) of Code_Point;
+   
+   function Identity return Simple_Mapping is
+      Result : Simple_Mapping;
+   begin
+      for C in Code_Point loop
+         Result (C) := C;
+      end loop;
+      return Result;
+   end Identity;
+
+   -- TODO (egg): In Ada 2022, initialize these with comprehensions.
+   Simple_Lowercase_Mapping : Simple_Mapping := Identity;
+   Simple_Titlecase_Mapping : Simple_Mapping := Identity;
+   Simple_Uppercase_Mapping : Simple_Mapping := Identity;
+   
+   procedure Process_Simple_Case_Mapping_Field
+     (Scope  : Code_Point_Range;
+      Number : Unicode.Character_Database.Field_Number;
+      Field  : Wide_Wide_String) is
+      subtype Simple_Case_Mapping_Field is
+        Unicode.Character_Database.Field_Number range 12 .. 14;
+   begin
+      if Number in Simple_Case_Mapping_Field and then Field /= "" then
+         declare
+            Value : constant Code_Point :=
+              Unicode.Character_Database.Parse_Code_Point (Field);
+         begin
+            for C in Scope.Low .. Scope.High loop
+               case Simple_Case_Mapping_Field'(Number) is
+                  when 12 => Simple_Uppercase_Mapping (C) := Value;
+                  when 13 => Simple_Lowercase_Mapping (C) := Value;
+                  when 14 => Simple_Titlecase_Mapping (C) := Value;
+               end case;   
+            end loop;
+         end;
+      end if;
+   end Process_Simple_Case_Mapping_Field;
+   
+   procedure Process_Simple_Case_Mappings is
+     new Unicode.Character_Database.Process_File
+       (Process_Simple_Case_Mapping_Field);
+   
+   type Special_Mapping_Value is access Wide_Wide_String;
+   type Special_Mapping is array (Code_Point) of Special_Mapping_Value;
+   
+   type Special_Casing is
+      record
+         Scope : Code_Point_Range;
+         Lower : Special_Mapping_Value;
+         Title : Special_Mapping_Value;
+         Upper : Special_Mapping_Value;
+      end record;
+   
+   Special_Lowercase_Mapping : Special_Mapping := (others => null);
+   Special_Titlecase_Mapping : Special_Mapping := (others => null);
+   Special_Uppercase_Mapping : Special_Mapping := (others => null);
+   
+   Current_Record : Special_Casing := (('Z', 'A'), null, null, null);
+   
+   procedure Process_Special_Casing_Field
+     (Scope  : Code_Point_Range;
+      Number : Unicode.Character_Database.Field_Number;
+      Field  : Wide_Wide_String) is
+   begin
+      if Scope /= Current_Record.Scope then
+         for C in Scope.High .. Scope.Low loop
+            Special_Lowercase_Mapping (C) := Current_Record.Lower;
+            Special_Titlecase_Mapping (C) := Current_Record.Title;
+            Special_Uppercase_Mapping (C) := Current_Record.Upper;
+         end loop;
+         Current_Record := (Scope, null, null, null);
+      end if;
+      case Number is
+         when 1 .. 3 =>
+            declare
+               Value           : Wide_Wide_String :=
+                 Unicode.Character_Database.Parse_Sequence (Field);
+               Allocated_Value : Special_Mapping_Value :=
+                 (if Value = "" then null
+                  else new Wide_Wide_String'(Value));
+            begin
+               case Number is
+                  when 1 => Current_Record.Lower := Allocated_Value; 
+                  when 2 => Current_Record.Lower := Allocated_Value;
+                  when 3 => Current_Record.Lower := Allocated_Value;
+                  when others => null;
+               end case;
+            end;
+         when 4 =>
+            if Field /= "" then
+               -- There is a condition.  We only look at the default case
+               -- mappings, so we ignore this record by emptying the range.
+               Current_Record.Scope := ('Z', 'A');
+            end if;
+         when 5 => null;
+         when others => raise Constraint_Error;
+      end case;
+   end Process_Special_Casing_Field;
+   
+   procedure Process_Special_Casing is
+     new Unicode.Character_Database.Process_File (Process_Special_Casing_Field);
+
 begin
  
+   Process_Simple_Case_Mappings ("UnicodeData.txt");
+   Process_Special_Casing ("SpecialCasing.txt");
+
    Process_Binary_Property_File ("DerivedCoreProperties.txt");
    Process_Binary_Property_File ("PropList.txt");
    Process_Binary_Property_File ("DerivedBinaryProperties.txt");

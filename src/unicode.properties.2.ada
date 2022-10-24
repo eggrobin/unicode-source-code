@@ -202,11 +202,6 @@ package body Unicode.Properties is
       Field  : Wide_Wide_String) is
    begin
       if Scope /= Current_Record.Scope then
-         for C in Scope.High .. Scope.Low loop
-            Special_Lowercase_Mapping (C) := Current_Record.Lower;
-            Special_Titlecase_Mapping (C) := Current_Record.Title;
-            Special_Uppercase_Mapping (C) := Current_Record.Upper;
-         end loop;
          Current_Record := (Scope, null, null, null);
       end if;
       case Number is
@@ -220,24 +215,45 @@ package body Unicode.Properties is
             begin
                case Number is
                   when 1 => Current_Record.Lower := Allocated_Value; 
-                  when 2 => Current_Record.Lower := Allocated_Value;
-                  when 3 => Current_Record.Lower := Allocated_Value;
+                  when 2 => Current_Record.Title := Allocated_Value;
+                  when 3 => Current_Record.Upper := Allocated_Value;
                   when others => null;
                end case;
             end;
          when 4 =>
-            if Field /= "" then
-               -- There is a condition.  We only look at the default case
-               -- mappings, so we ignore this record by emptying the range.
-               Current_Record.Scope := ('Z', 'A');
+            if Field = "" then
+               for C in Scope.Low .. Scope.High loop
+                  Special_Lowercase_Mapping (C) := Current_Record.Lower;
+                  Special_Titlecase_Mapping (C) := Current_Record.Title;
+                  Special_Uppercase_Mapping (C) := Current_Record.Upper;
+               end loop;
             end if;
-         when 5 => null;
+         when 5 =>
+            -- There was a condition (field 4).  We only look at the default
+            -- case mappings, so we ignore this record.
+            if Field /= "" then
+               raise Constraint_Error;
+            end if;
          when others => raise Constraint_Error;
       end case;
    end Process_Special_Casing_Field;
    
    procedure Process_Special_Casing is
      new Unicode.Character_Database.Process_File (Process_Special_Casing_Field);
+
+   
+   function Lowercase_Mapping (C : Code_Point) return Wide_Wide_String is
+     (if Special_Lowercase_Mapping (C) /= null
+      then Special_Lowercase_Mapping (C).all
+      else (1 => Simple_Lowercase_Mapping (C)));
+   function Titlecase_Mapping (C : Code_Point) return Wide_Wide_String is
+     (if Special_Titlecase_Mapping (C) /= null
+      then Special_Titlecase_Mapping (C).all
+      else (1 => Simple_Titlecase_Mapping (C)));
+   function Uppercase_Mapping (C : Code_Point) return Wide_Wide_String is
+     (if Special_Uppercase_Mapping (C) /= null
+      then Special_Uppercase_Mapping (C).all
+      else (1 => Simple_Uppercase_Mapping (C)));
 
 begin
  

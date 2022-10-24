@@ -165,4 +165,8 @@ package Unicode.Properties is
    function FSI return Bidi_Class renames First_Strong_Isolate;
    function PDI return Bidi_Class renames Pop_Directional_Isolate;
    
+   function Lowercase_Mapping (C : Code_Point) return Wide_Wide_String;
+   function Titlecase_Mapping (C : Code_Point) return Wide_Wide_String;
+   function Uppercase_Mapping (C : Code_Point) return Wide_Wide_String;
+   
 end Unicode.Properties;

@@ -169,4 +169,6 @@ package Unicode.Properties is
    function Titlecase_Mapping (C : Code_Point) return Wide_Wide_String;
    function Uppercase_Mapping (C : Code_Point) return Wide_Wide_String;
    
+   function Case_Folding (C : Code_Point) return Wide_Wide_String;
+   
 end Unicode.Properties;

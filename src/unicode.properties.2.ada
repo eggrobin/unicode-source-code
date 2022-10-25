@@ -151,6 +151,7 @@ package body Unicode.Properties is
    Simple_Lowercase_Mapping : Simple_Mapping := Identity;
    Simple_Titlecase_Mapping : Simple_Mapping := Identity;
    Simple_Uppercase_Mapping : Simple_Mapping := Identity;
+   Simple_Case_Folding      : Simple_Mapping := Identity;
    
    procedure Process_Simple_Case_Mapping_Field
      (Scope  : Code_Point_Range;
@@ -193,16 +194,17 @@ package body Unicode.Properties is
    Special_Lowercase_Mapping : Special_Mapping := (others => null);
    Special_Titlecase_Mapping : Special_Mapping := (others => null);
    Special_Uppercase_Mapping : Special_Mapping := (others => null);
+   Full_Case_Folding        : Special_Mapping := (others => null);
    
-   Current_Record : Special_Casing := (('Z', 'A'), null, null, null);
+   Current_SC_Record : Special_Casing := (('Z', 'A'), null, null, null);
    
    procedure Process_Special_Casing_Field
      (Scope  : Code_Point_Range;
       Number : Unicode.Character_Database.Field_Number;
       Field  : Wide_Wide_String) is
    begin
-      if Scope /= Current_Record.Scope then
-         Current_Record := (Scope, null, null, null);
+      if Scope /= Current_SC_Record.Scope then
+         Current_SC_Record := (Scope, null, null, null);
       end if;
       case Number is
          when 1 .. 3 =>
@@ -214,18 +216,18 @@ package body Unicode.Properties is
                   else new Wide_Wide_String'(Value));
             begin
                case Number is
-                  when 1 => Current_Record.Lower := Allocated_Value; 
-                  when 2 => Current_Record.Title := Allocated_Value;
-                  when 3 => Current_Record.Upper := Allocated_Value;
+                  when 1 => Current_SC_Record.Lower := Allocated_Value; 
+                  when 2 => Current_SC_Record.Title := Allocated_Value;
+                  when 3 => Current_SC_Record.Upper := Allocated_Value;
                   when others => null;
                end case;
             end;
          when 4 =>
             if Field = "" then
                for C in Scope.Low .. Scope.High loop
-                  Special_Lowercase_Mapping (C) := Current_Record.Lower;
-                  Special_Titlecase_Mapping (C) := Current_Record.Title;
-                  Special_Uppercase_Mapping (C) := Current_Record.Upper;
+                  Special_Lowercase_Mapping (C) := Current_SC_Record.Lower;
+                  Special_Titlecase_Mapping (C) := Current_SC_Record.Title;
+                  Special_Uppercase_Mapping (C) := Current_SC_Record.Upper;
                end loop;
             end if;
          when 5 =>
@@ -240,7 +242,61 @@ package body Unicode.Properties is
    
    procedure Process_Special_Casing is
      new Unicode.Character_Database.Process_File (Process_Special_Casing_Field);
-
+   
+   type Case_Folding_Status is (C, F, S, T);
+   function Common return Case_Folding_Status renames C;
+   function Full return Case_Folding_Status renames F;
+   function Simple return Case_Folding_Status renames S;
+   function Turkic return Case_Folding_Status renames T;
+   
+   type Case_Folding_Record is
+      record
+         Scope  : Code_Point_Range;
+         Status : Case_Folding_Status;
+      end record;
+   
+   Current_CF_Record : Case_Folding_Record := (('Z', 'A'), C);
+   
+   procedure Process_Case_Folding_Field
+     (Scope  : Code_Point_Range;
+      Number : Unicode.Character_Database.Field_Number;
+      Field  : Wide_Wide_String) is
+   begin
+      if Scope /= Current_CF_Record.Scope then
+         Current_CF_Record := (Scope, C);
+      end if;
+      case Number is
+         when 1 =>
+            Current_CF_Record.Status :=
+              Case_Folding_Status'Wide_Wide_Value (Field);
+         when 2 =>
+            for C in Scope.Low .. Scope.High loop
+               case Current_CF_Record.Status is
+                  when Common =>
+                     Simple_Case_Folding (C) :=
+                       (Unicode.Character_Database.Parse_Code_Point (Field));
+                     Full_Case_Folding (C) :=
+                       new Wide_Wide_String'
+                         (1 => Unicode.Character_Database.Parse_Code_Point (Field));
+                  when Simple => Simple_Case_Folding (C) :=
+                       (Unicode.Character_Database.Parse_Code_Point (Field));
+                  when Full =>
+                     Full_Case_Folding (C) :=
+                       new Wide_Wide_String'
+                         (Unicode.Character_Database.Parse_Sequence (Field));
+                  when Turkic => null;
+               end case;
+            end loop;
+         when 3 =>
+            if Field /= "" then
+               raise Constraint_Error;
+            end if;
+         when others => raise Constraint_Error;
+      end case;
+   end Process_Case_Folding_Field;
+   
+   procedure Process_Case_Folding is
+     new Unicode.Character_Database.Process_File (Process_Case_Folding_Field);  
    
    function Lowercase_Mapping (C : Code_Point) return Wide_Wide_String is
      (if Special_Lowercase_Mapping (C) /= null
@@ -255,10 +311,15 @@ package body Unicode.Properties is
       then Special_Uppercase_Mapping (C).all
       else (1 => Simple_Uppercase_Mapping (C)));
 
+   function Case_Folding (C : Code_Point) return Wide_Wide_String is
+     (if Full_Case_Folding (C) = null then (1 => C)
+      else Full_Case_Folding (C).all);
+
 begin
  
    Process_Simple_Case_Mappings ("UnicodeData.txt");
    Process_Special_Casing ("SpecialCasing.txt");
+   Process_Case_Folding ("CaseFolding.txt");
 
    Process_Binary_Property_File ("DerivedCoreProperties.txt");
    Process_Binary_Property_File ("PropList.txt");

@@ -183,6 +183,32 @@ package body Unicode.Properties is
    type Special_Mapping_Value is access Wide_Wide_String;
    type Special_Mapping is array (Code_Point) of Special_Mapping_Value;
    
+   Special_Lowercase_Mapping : Special_Mapping := (others => null);
+   Special_Titlecase_Mapping : Special_Mapping := (others => null);
+   Special_Uppercase_Mapping : Special_Mapping := (others => null);
+   Full_Case_Folding        : Special_Mapping := (others => null);
+   Canonical_Mapping        : Special_Mapping := (others => null);
+   
+   procedure Process_Decomposition_Mapping_Field
+     (Scope  : Code_Point_Range;
+      Number : Unicode.Character_Database.Field_Number;
+      Field  : Wide_Wide_String) is
+      use type Unicode.Character_Database.Field_Number;
+   begin
+      if Number = 5 and then Field /= "" and then
+        not (for some C of Field => C = '<')  then
+         for C in Scope.Low .. Scope.High loop
+            Canonical_Mapping (C) :=
+              new Wide_Wide_String'
+                (Unicode.Character_Database.Parse_Sequence (Field));
+           end loop;
+      end if;
+   end Process_Decomposition_Mapping_Field;
+   
+   procedure Process_Decomposition_Mappings is
+     new Unicode.Character_Database.Process_File
+       (Process_Decomposition_Mapping_Field);
+   
    type Special_Casing is
       record
          Scope : Code_Point_Range;
@@ -190,11 +216,6 @@ package body Unicode.Properties is
          Title : Special_Mapping_Value;
          Upper : Special_Mapping_Value;
       end record;
-   
-   Special_Lowercase_Mapping : Special_Mapping := (others => null);
-   Special_Titlecase_Mapping : Special_Mapping := (others => null);
-   Special_Uppercase_Mapping : Special_Mapping := (others => null);
-   Full_Case_Folding        : Special_Mapping := (others => null);
    
    Current_SC_Record : Special_Casing := (('Z', 'A'), null, null, null);
    
@@ -314,10 +335,38 @@ package body Unicode.Properties is
    function Case_Folding (C : Code_Point) return Wide_Wide_String is
      (if Full_Case_Folding (C) = null then (1 => C)
       else Full_Case_Folding (C).all);
+   
+   function Canonical_Decomposition (C : Code_Point) return Wide_Wide_String is
+   begin
+      if Canonical_Mapping (C) = null then
+         return (1 => C);
+      else
+         declare
+            Mapping : Wide_Wide_String renames Canonical_Mapping (C).all;
+         begin
+            -- Stability policy:
+            -- Canonical mappings (Decomposition_Mapping property values) are
+            -- always limited either to a single value or to a pair. The second
+            -- character in the pair cannot itself have a canonical mapping.
+            case Mapping'Length is
+               when 1 =>
+                  return Canonical_Decomposition (Mapping (Mapping'First));
+               when 2 =>
+                  if Canonical_Mapping (Mapping (Mapping'Last)) /= null then
+                     raise Constraint_Error;
+                  end if;
+                  return Canonical_Decomposition (Mapping (Mapping'First)) &
+                    Mapping (Mapping'Last);
+               when others => raise Constraint_Error;
+            end case;
+         end;
+      end if;         
+   end Canonical_Decomposition;
 
 begin
  
    Process_Simple_Case_Mappings ("UnicodeData.txt");
+   Process_Decomposition_Mappings ("UnicodeData.txt");
    Process_Special_Casing ("SpecialCasing.txt");
    Process_Case_Folding ("CaseFolding.txt");
 

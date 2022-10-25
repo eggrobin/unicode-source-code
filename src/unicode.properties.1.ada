@@ -171,4 +171,12 @@ package Unicode.Properties is
    
    function Case_Folding (C : Code_Point) return Wide_Wide_String;
    
+   function Canonical_Decomposition (C : Code_Point) return Wide_Wide_String;
+   
+   type Canonical_Combining_Class is range 0 .. 254;
+   function Not_Reordered return Canonical_Combining_Class is (0);
+
+   function Get_Canonical_Combining_Class (C : Code_Point)
+                                           return Canonical_Combining_Class;
+   
 end Unicode.Properties;

@@ -26,7 +26,7 @@ procedure Properties_Test is
                  (Unicode.U_Notation (C) & ' ' & C & ": " &
                     Changes'Wide_Wide_Image &
                     "=" & Unicode.Properties.Get (Changes, C)'Wide_Wide_Image &
-                    " but its " & Mapping_Name & " is ");
+                    " but its " & Mapping_Name & " is");
                for M of Mapping (C) loop
                   Ada.Wide_Wide_Text_IO.Put (' ' & Unicode.U_Notation (M));
                end loop;

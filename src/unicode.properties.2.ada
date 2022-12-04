@@ -71,6 +71,17 @@ package body Unicode.Properties is
               (General_Category_Alias'Wide_Wide_Value (Value)));
    end Parse_General_Category;
    
+   function Parse_Line_Break (Value : Wide_Wide_String)
+                                    return Line_Break is
+   begin
+      for Candidate in Line_Break loop
+         if Line_Break_Aliases (Candidate).all = Value then
+            return Candidate;
+         end if;
+      end loop;
+      raise Constraint_Error;
+   end Parse_Line_Break;
+      
    generic
       type Property is (<>);
       File_Name : String;
@@ -121,13 +132,17 @@ package body Unicode.Properties is
       "DerivedGeneralCategory.txt",
       Parse_General_Category);
    
+   package Line_Breaking_Classes is new Enumeration_Properties
+     (Line_Break,
+      "LineBreak.txt",
+      Parse_Line_Break);
+   
    procedure Process_Binary_Property_File is
      new Unicode.Character_Database.Process_File
        (Process_Binary_Property_Field);
 
    function Get_General_Category (C : Code_Point) return General_Category 
-                                  renames General_Categories.Value;
-   
+                                  renames General_Categories.Value;   
    function Set_Of (Property : General_Category) return Code_Point_Set
                     renames General_Categories.Set_Of;
 
@@ -135,6 +150,9 @@ package body Unicode.Properties is
                             renames Bidi_Classes.Value;      
    function Set_Of (Property : Bidi_Class) return Code_Point_Set
                     renames Bidi_Classes.Set_Of;
+      
+   function Set_Of (Property : Line_Break) return Code_Point_Set
+                    renames Line_Breaking_Classes.Set_Of;   
    
    type Simple_Mapping is array (Code_Point) of Code_Point;
    
@@ -362,6 +380,13 @@ package body Unicode.Properties is
          end;
       end if;         
    end Canonical_Decomposition;
+   
+   function Get_Canonical_Combining_Class (C : Code_Point)
+                                           return Canonical_Combining_Class is
+   begin
+      raise Program_Error;
+      return 0;
+   end Get_Canonical_Combining_Class;
 
 begin
  

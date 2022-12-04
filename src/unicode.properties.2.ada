@@ -151,7 +151,7 @@ package body Unicode.Properties is
    
    package Line_Breaking_Classes is new Enumeration_Properties
      (Line_Break,
-      "LineBreak.txt",
+      "LineBreak-Amd.txt",
       Parse_Line_Break);
    
    package East_Asian_Widths is new Enumeration_Properties

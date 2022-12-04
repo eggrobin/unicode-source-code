@@ -16,7 +16,7 @@ package Unicode is
    Codespace : constant Code_Point_Set := To_Set (Span => (Code_Point'First,
                                                            Code_Point'Last));
 
-   subtype Code_Point_Range Is
+   subtype Code_Point_Range is
      Ada.Strings.Wide_Wide_Maps.Wide_Wide_Character_Range;
    use all type Code_Point_Range;
 

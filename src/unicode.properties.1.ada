@@ -210,7 +210,13 @@ package Unicode.Properties is
                        Word_Joiner,
                        Unknown,
                        ZWSpace,
-                       ZWJ);
+                       ZWJ,
+                       -- Proposed
+                       Aksara,
+                       Aksara_Prebase,
+                       Aksara_Start,
+                       Virama_Final,
+                       Virama);
    
    type Line_Break_Alias is not null access constant Wide_Wide_String;
    Line_Break_Aliases : constant array (Line_Break) of Line_Break_Alias :=
@@ -256,7 +262,13 @@ package Unicode.Properties is
       new Wide_Wide_String'("WJ"),
       new Wide_Wide_String'("XX"),
       new Wide_Wide_String'("ZW"),
-      new Wide_Wide_String'("ZWJ"));
+      new Wide_Wide_String'("ZWJ"),
+        -- Proposed
+      new Wide_Wide_String'("AK"),
+      new Wide_Wide_String'("AP"),
+      new Wide_Wide_String'("AS"),
+      new Wide_Wide_String'("VF"),
+      new Wide_Wide_String'("VI"));
    
    function Set_Of (Property : Line_Break) return Code_Point_Set;
    

@@ -81,6 +81,23 @@ package body Unicode.Properties is
       end loop;
       raise Constraint_Error;
    end Parse_Line_Break;
+   
+   function Parse_East_Asian_Width (Value : Wide_Wide_String)
+                                    return East_Asian_Width is
+      type East_Asian_Width_Alias is (A,
+                                      F,
+                                      H,
+                                      N,
+                                      Na,
+                                      W);
+   begin
+      return East_Asian_Width'Wide_Wide_Value (Value);
+   exception
+      when Constraint_Error =>
+         return East_Asian_Width'Val 
+           (East_Asian_Width_Alias'Pos 
+              (East_Asian_Width_Alias'Wide_Wide_Value (Value)));
+   end Parse_East_Asian_Width;
       
    generic
       type Property is (<>);
@@ -137,6 +154,11 @@ package body Unicode.Properties is
       "LineBreak.txt",
       Parse_Line_Break);
    
+   package East_Asian_Widths is new Enumeration_Properties
+     (East_Asian_Width,
+      "DerivedEastAsianWidth.txt",
+      Parse_East_Asian_Width);
+   
    procedure Process_Binary_Property_File is
      new Unicode.Character_Database.Process_File
        (Process_Binary_Property_Field);
@@ -153,6 +175,9 @@ package body Unicode.Properties is
       
    function Set_Of (Property : Line_Break) return Code_Point_Set
                     renames Line_Breaking_Classes.Set_Of;   
+      
+   function Set_Of (Property : East_Asian_Width) return Code_Point_Set
+                    renames East_Asian_Widths.Set_Of;   
    
    type Simple_Mapping is array (Code_Point) of Code_Point;
    

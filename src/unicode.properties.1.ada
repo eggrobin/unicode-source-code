@@ -259,6 +259,15 @@ package Unicode.Properties is
       new Wide_Wide_String'("ZWJ"));
    
    function Set_Of (Property : Line_Break) return Code_Point_Set;
+   
+   type East_Asian_Width is (Ambiguous,
+                             Fullwidth,
+                             Halfwidth,
+                             Neutral,
+                             Narrow,
+                             Wide);
+   
+   function Set_Of (Property : East_Asian_Width) return Code_Point_Set;
       
    function Lowercase_Mapping (C : Code_Point) return Wide_Wide_String;
    function Titlecase_Mapping (C : Code_Point) return Wide_Wide_String;

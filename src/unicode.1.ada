@@ -13,6 +13,8 @@ package Unicode is
    subtype Code_Point_Set is Ada.Strings.Wide_Wide_Maps.Wide_Wide_Character_Set;
    use all type Code_Point_Set;
    Null_Set : Code_Point_Set renames Ada.Strings.Wide_Wide_Maps.Null_Set;
+   Codespace : constant Code_Point_Set := To_Set (Span => (Code_Point'First,
+                                                           Code_Point'Last));
 
    subtype Code_Point_Range Is
      Ada.Strings.Wide_Wide_Maps.Wide_Wide_Character_Range;

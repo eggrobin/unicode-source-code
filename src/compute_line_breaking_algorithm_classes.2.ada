@@ -1,7 +1,7 @@
 with Ada.Wide_Wide_Text_IO;
 with Ada.Strings.Wide_Wide_Unbounded;
 with Unicode;
-with Unicode.Properties;
+with Unicode.Properties; use Unicode.Properties;
 
 use all type Ada.Strings.Wide_Wide_Unbounded.Unbounded_Wide_Wide_String;
 use all type Unicode.Code_Point_Set;
@@ -35,8 +35,40 @@ procedure Compute_Line_Breaking_Algorithm_Classes is
            To_Escaped_JS_Regex (Set) & """],");
    end Print_Class;
 begin
-   for Class in Unicode.Properties.Line_Break loop
-      Print_Class (Unicode.Properties.Line_Break_Aliases (Class).all,
-                   Unicode.Properties.Set_Of (Class));
+   for Line_Breaking_Class in Line_Break loop
+      Print_Class (Line_Break_Aliases (Line_Breaking_Class).all,
+                   Set_Of (Line_Breaking_Class));
    end loop;
+   Print_Class ("[SA&[p{Mn}p{Mc}]]",
+                Set_Of (Line_Break'(Complex_Context)) and
+                  (Set_Of (Mn) or Set_Of (Mc)));
+   Print_Class ("[SA-[p{Mn}p{Mc}]]",
+                Set_Of (Line_Break'(Complex_Context)) -
+                  (Set_Of (Mn) or Set_Of (Mc)));
+   Print_Class ("[^BK,CR,LF,NL,SP,ZW]",
+                Unicode.Codespace - (Set_Of (Line_Break'(Mandatory_Break))
+                  or Set_Of (Line_Break'(Carriage_Return))
+                  or Set_Of (Line_Break'(Line_Feed))
+                  or Set_Of (Line_Break'(Next_Line))
+                  or Set_Of (Line_Break'(Space))
+                  or Set_Of (Line_Break'(ZWSpace))));
+   Print_Class ("[^SP,BA,HY]",
+                Unicode.Codespace - (Set_Of (Line_Break'(Space))
+                  or Set_Of (Line_Break'(Break_After))
+                  or Set_Of (Line_Break'(Hyphen))));
+   Print_Class ("[OP-[p{ea=F}p{ea=W}p{ea=H}]]",
+                (Set_Of (Line_Break'(Open_Punctuation)) -
+                 (Set_Of (East_Asian_Width'(Fullwidth))
+                    or Set_Of (East_Asian_Width'(Wide))
+                    or Set_Of (East_Asian_Width'(Halfwidth)))));
+   Print_Class ("[CP-[p{ea=F}p{ea=W}p{ea=H}]]",
+                (Set_Of (Line_Break'(Close_Parenthesis)) -
+                 (Set_Of (East_Asian_Width'(Fullwidth))
+                    or Set_Of (East_Asian_Width'(Wide))
+                    or Set_Of (East_Asian_Width'(Halfwidth)))));
+   Print_Class ("[^RI]",
+                Unicode.Codespace - (Set_Of (Line_Break'(Regional_Indicator))));
+   Print_Class ("[p{Extended_Pictographic}&p{Cn}]",
+                Set_Of (Extended_Pictographic) and Set_Of(Cn));
+                
 end Compute_Line_Breaking_Algorithm_Classes;

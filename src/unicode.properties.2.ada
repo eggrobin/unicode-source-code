@@ -398,5 +398,6 @@ begin
    Process_Binary_Property_File ("DerivedCoreProperties.txt");
    Process_Binary_Property_File ("PropList.txt");
    Process_Binary_Property_File ("DerivedBinaryProperties.txt");
+   Process_Binary_Property_File ("emoji-data.txt");
    
 end Unicode.Properties;

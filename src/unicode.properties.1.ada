@@ -18,7 +18,10 @@ package Unicode.Properties is
       Sentence_Terminal, Soft_Dotted, Terminal_Punctuation, Unified_Ideograph,
       Variation_Selector, White_Space,
       -- UnicodeData.txt (but we get it from DerivedBinaryProperties.txt).
-      Bidi_Mirrored);
+      Bidi_Mirrored,
+      -- emoji-data.txt
+      Emoji, Emoji_Presentation, Emoji_Modifier, Emoji_Modifier_Base,
+      Emoji_Component, Extended_Pictographic);
    
    function Get (Property : Binary_Property; C : Code_Point) return Boolean;
    function Set_Of (Property : Binary_Property) return Code_Point_Set;

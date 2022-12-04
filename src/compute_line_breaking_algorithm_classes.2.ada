@@ -27,12 +27,15 @@ procedure Compute_Line_Breaking_Algorithm_Classes is
       Result := Result & "]";
       return To_Wide_Wide_String (Result);
    end To_Escaped_JS_Regex;
+   procedure Print_Class (Name : Wide_Wide_String; Class : Code_Point_Set) is
+   begin
+      Ada.Wide_Wide_Text_IO.Put_Line
+        ("[""" & Name & """,""" &
+           To_Escaped_JS_Regex (Unicode.Properties.Set_Of (Class)) & """],");
+   end Print_Class;
 begin
    for Class in Unicode.Properties.Line_Break loop
-      Ada.Wide_Wide_Text_IO.Put_Line
-        ("[""" &
-           Unicode.Properties.Line_Break_Aliases (Class).all & """,""" &
-           To_Escaped_JS_Regex (Unicode.Properties.Set_Of (Class)) &
-           """],");
+      Print_Class (Unicode.Properties.Line_Break_Aliases (Class).all,
+                   Unicode.Properties.Set_Of (Class));
    end loop;
 end Compute_Line_Breaking_Algorithm_Classes;

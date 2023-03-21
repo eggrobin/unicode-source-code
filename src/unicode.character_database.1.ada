@@ -4,8 +4,9 @@ use Unicode.Properties;
 package Unicode.Character_Database is
 
    type Database is tagged private;
-   type Access_Database is access Database;
+   type Access_Database is access Database;   
 
+   function Version (V : Unicode.Version) return Access_Database;
    function Latest return Access_Database;
 
    function Get (UCD: Database; Property : Binary_Property; C : Code_Point) return Boolean;

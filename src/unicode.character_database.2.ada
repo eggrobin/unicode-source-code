@@ -409,14 +409,16 @@ begin
    return UCD;
 end Read_UCD;
 
-Latest_UCD : Access_Database := null;
+All_Versions : array (Unicode.Version) of Access_Database := (others => null);
 
-function Latest return Access_Database is
+function Version (V : Unicode.Version) return Access_Database is
 begin
-   if Latest_UCD = null then
-      Latest_UCD := Read_UCD ("15.0.0");
+   if All_Versions (V) = null then
+      All_Versions (V) := Read_UCD ([for C in V'Image (9 .. V'Image'Last) => (if C = '.' then '_' else C)]);
    end if;
    return Latest_UCD;
-end Latest;
+end Version;
+
+function Latest return Access_Database is (Version (Unicode.Version'Last));
 
 end Unicode.Character_Database;

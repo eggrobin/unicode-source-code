@@ -88,7 +88,8 @@ package body Unicode.Character_Database is
       Number : Unicode.Character_Database.Parser.Field_Number;
       Field  : Wide_Wide_String) is
       Property : constant Binary_Property :=
-                  Binary_Property'Wide_Wide_Value (Field);
+         (if Field = "STerm" then Sentence_Terminal else
+          Binary_Property'Wide_Wide_Value (Field));
       Set      : Code_Point_Set := To_Set (Scope);
       use type Unicode.Character_Database.Parser.Field_Number;
    begin       
@@ -168,34 +169,28 @@ package body Unicode.Character_Database is
    generic
       type Property is (<>);
       File_Name : String;
-      with function Parse_Property (S : Wide_Wide_String) return Property;
-   package Enumeration_Properties is
-      Values : array (Code_Point) of Property;
-      Sets   : array (Property) of Code_Point_Set;
-
-      function Value (C : Code_Point) return Property is (Values (C));
-      
-      function Set_Of (P : Property) return Code_Point_Set is (Sets (P));      
-   end Enumeration_Properties;
-   
-   package body Enumeration_Properties is
-      procedure Process_Field 
-      (Scope  : Ada.Strings.Wide_Wide_Maps.Wide_Wide_Character_Range;
+      with function Parse_Property (Value : Wide_Wide_String) return Property;
+      with package Property_Data is new Enumeration_Property_Data (Property);
+   procedure Process_Enumeration_Property (Data : out Property_Data.Data);
+   procedure Process_Enumeration_Property (Data : out Property_Data.Data) is
+      procedure Process_Field
+        (Scope  : Ada.Strings.Wide_Wide_Maps.Wide_Wide_Character_Range;
          Number : Unicode.Character_Database.Parser.Field_Number;
-         Field  : Wide_Wide_String) is
+         Field  : Wide_Wide_String)
+      is
          New_Value : constant Property := Parse_Property (Field);
-         Set       : Code_Point_Set := To_Set (Scope);
+         Set       : Code_Point_Set    := To_Set (Scope);
          use type Unicode.Character_Database.Parser.Field_Number;
-      begin       
+      begin
          if Number /= 1 then
             raise Constraint_Error with "Unexpected field " & Number'Image;
          end if;
          for Value in Property loop
-            Sets (Value) := Sets (Value) - Set;
+            Data.Sets (Value) := Data.Sets (Value) - Set;
          end loop;
-         Sets (New_Value) := Sets (New_Value) or Set;
+         Data.Sets (New_Value) := Data.Sets (New_Value) or Set;
          for C in Scope.Low .. Scope.High loop
-            Values (C) := New_Value;
+            Data.Values (C) := New_Value;
          end loop;
       end Process_Field;
       
@@ -203,29 +198,33 @@ package body Unicode.Character_Database is
       new Unicode.Character_Database.Parser.Process_File (Process_Field);
    begin
       Process_File (File_Name);
-   end Enumeration_Properties;
+   end Process_Enumeration_Property;
 
    Extracted : constant String := Ada.Directories.Compose(Directory, "extracted");
    
-   package Bidi_Classes is new Enumeration_Properties
+   procedure Process_Bidi_Classes is new Process_Enumeration_Property
    (Bidi_Class,
       Ada.Directories.Compose(Extracted, "DerivedBidiClass", "txt"),
-      Parse_Bidi_Class);
+      Parse_Bidi_Class,
+      Bidi_Class_Data);
    
-   package General_Categories is new Enumeration_Properties
+   procedure Process_General_Categories is new Process_Enumeration_Property
    (General_Category,
       Ada.Directories.Compose(Extracted, "DerivedGeneralCategory", "txt"),
-      Parse_General_Category);
+      Parse_General_Category,
+      General_Category_Data);
    
-   package Line_Breaking_Classes is new Enumeration_Properties
+   procedure Process_Line_Breaking_Classes is new Process_Enumeration_Property
    (Line_Break,
       Ada.Directories.Compose(Directory, "LineBreak", "txt"),
-      Parse_Line_Break);
+      Parse_Line_Break,
+      Line_Break_Data);
    
-   package East_Asian_Widths is new Enumeration_Properties
+   procedure Process_East_Asian_Widths is new Process_Enumeration_Property
    (East_Asian_Width,
       Ada.Directories.Compose(Extracted, "DerivedEastAsianWidth", "txt"),
-      Parse_East_Asian_Width);
+      Parse_East_Asian_Width,
+      East_Asian_Width_Data);
    
    procedure Process_Binary_Property_File is
    new Unicode.Character_Database.Parser.Process_File
@@ -309,7 +308,8 @@ package body Unicode.Character_Database is
          when 1 .. 3 =>
             declare
                Value           : Wide_Wide_String :=
-               Parser.Parse_Sequence (Field);
+                  (if Field = "<slc>" or Field = "<stc>" or Field = "<suc>" then
+                  "" else Parser.Parse_Sequence (Field));
                Allocated_Value : Special_Mapping_Value :=
                (if Value = "" then null
                   else new Wide_Wide_String'(Value));
@@ -369,11 +369,14 @@ package body Unicode.Character_Database is
             Current_CF_Record.Status :=
             Case_Folding_Status'Wide_Wide_Value (Field);
          when 2 =>
+            if Field = "<code point>" then
+               -- Some versions of Unicode had an @missing line in CaseFolding.txt.
+               return;
+            end if;
             for C in Scope.Low .. Scope.High loop
                case Current_CF_Record.Status is
                   when Common =>
-                     UCD.Simple_Case_Folding (C) :=
-                     (Parser.Parse_Code_Point (Field));
+                     UCD.Simple_Case_Folding (C) := (Parser.Parse_Code_Point (Field));
                      UCD.Full_Case_Folding (C) :=
                      new Wide_Wide_String'
                         (1 => Parser.Parse_Code_Point (Field));
@@ -393,6 +396,9 @@ package body Unicode.Character_Database is
          when others => raise Constraint_Error;
       end case;
    end Process_Case_Folding_Field;
+   
+   procedure Process_Case_Folding is
+   new Unicode.Character_Database.Parser.Process_File (Process_Case_Folding_Field); 
 
    Is_NFKC_CF_Record : Boolean := False;
    
@@ -410,7 +416,7 @@ package body Unicode.Character_Database is
             end if;
             declare 
                Value : constant Special_Mapping_Value :=
-                  (if Field = "<code_point>" then null
+                  (if Field = "<code point>" then null
                    else new Wide_Wide_String'(Parser.Parse_Sequence (Field)));
             begin
                for C in Scope.Low .. Scope.High loop
@@ -421,8 +427,8 @@ package body Unicode.Character_Database is
       end case;
    end Process_Normalization_Field;
    
-   procedure Process_Case_Folding is
-   new Unicode.Character_Database.Parser.Process_File (Process_Case_Folding_Field);  
+   procedure Process_Normalization_Props is
+   new Unicode.Character_Database.Parser.Process_File (Process_Normalization_Field); 
 
    Emoji : constant String := Ada.Directories.Compose (Directory, "emoji");
    UnicodeData : constant String := Ada.Directories.Compose (Directory, "UnicodeData", "txt");
@@ -432,11 +438,17 @@ begin
    Process_Decomposition_Mappings (UnicodeData);
    Process_Special_Casing (Ada.Directories.Compose (Directory, "SpecialCasing", "txt"));
    Process_Case_Folding (Ada.Directories.Compose (Directory, "CaseFolding", "txt"));
+   Process_Normalization_Props (Ada.Directories.Compose (Directory, "DerivedNormalizationProps", "txt"));
+
+   Process_General_Categories (UCD.General_Categories);
+   Process_Bidi_Classes (UCD.Bidi_Classes);
+   Process_Line_Breaking_Classes (UCD.Line_Breaking_Classes);
+   Process_East_Asian_Widths (UCD.East_Asian_Width_Classes);
 
    Process_Binary_Property_File (Ada.Directories.Compose (Directory, "DerivedCoreProperties", "txt"));
    Process_Binary_Property_File (Ada.Directories.Compose (Directory, "PropList", "txt"));
    Process_Binary_Property_File (Ada.Directories.Compose (Extracted, "DerivedBinaryProperties", "txt"));
-   Process_Binary_Property_File (Ada.Directories.Compose (Emoji, "emoji-data", "txt"));
+   --Process_Binary_Property_File (Ada.Directories.Compose (Emoji, "emoji-data", "txt"));
    return UCD;
 end Read_UCD;
 

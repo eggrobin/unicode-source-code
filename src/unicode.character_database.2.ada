@@ -50,6 +50,10 @@ package body Unicode.Character_Database is
    (if UCD.Full_Case_Folding (C) = null then (1 => C)
       else UCD.Full_Case_Folding (C).all);
    
+   function NFKC_Casefold (UCD: Database; C : Code_Point) return Wide_Wide_String is
+   (if UCD.Nontrivial_NFKC_Casefold (C) = null then (1 => C)
+      else UCD.Nontrivial_NFKC_Casefold (C).all);
+   
    function Canonical_Decomposition (UCD : Database; C : Code_Point) return Wide_Wide_String is
    begin
       if UCD.Canonical_Mapping (C) = null then
@@ -389,6 +393,33 @@ package body Unicode.Character_Database is
          when others => raise Constraint_Error;
       end case;
    end Process_Case_Folding_Field;
+
+   Is_NFKC_CF_Record : Boolean := False;
+   
+   procedure Process_Normalization_Field
+   (Scope  : Code_Point_Range;
+      Number : Unicode.Character_Database.Parser.Field_Number;
+      Field  : Wide_Wide_String) is
+   begin
+      case Number is
+         when 1 =>
+            Is_NFKC_CF_Record := Field = "NFKC_CF";
+         when 2 =>
+            if not Is_NFKC_CF_Record then
+               return;
+            end if;
+            declare 
+               Value : constant Special_Mapping_Value :=
+                  (if Field = "<code_point>" then null
+                   else new Wide_Wide_String'(Parser.Parse_Sequence (Field)));
+            begin
+               for C in Scope.Low .. Scope.High loop
+                  UCD.Nontrivial_NFKC_Casefold (C) := Value;
+               end loop;
+            end;
+         when others => null;
+      end case;
+   end Process_Normalization_Field;
    
    procedure Process_Case_Folding is
    new Unicode.Character_Database.Parser.Process_File (Process_Case_Folding_Field);  
@@ -412,11 +443,14 @@ end Read_UCD;
 All_Versions : array (Unicode.Version) of Access_Database := (others => null);
 
 function Version (V : Unicode.Version) return Access_Database is
+   Version_Image : constant String := V'Image;
+   I : constant Positive := Version_Image'First + String'("Version_")'Length;
+   Directory : constant String := [for C of Version_Image (I .. Version_Image'Last) => (if C = '_' then '.' else C)];
 begin
    if All_Versions (V) = null then
-      All_Versions (V) := Read_UCD ([for C in V'Image (9 .. V'Image'Last) => (if C = '.' then '_' else C)]);
+      All_Versions (V) := Read_UCD (Directory);
    end if;
-   return Latest_UCD;
+   return All_Versions (V);
 end Version;
 
 function Latest return Access_Database is (Version (Unicode.Version'Last));

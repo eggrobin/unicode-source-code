@@ -36,5 +36,5 @@ package Unicode is
 
    function U_Notation (C : Code_Point) return Wide_Wide_String;
    function U_Notation (R     : Code_Point_Range;
-                        Style : Range_Style := En_Dash) return Wide_Wide_String;
+                        Style : Range_Style := En_Dash) return Wide_Wide_String;                   
 end Unicode;

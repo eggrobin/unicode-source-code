@@ -22,9 +22,6 @@ package Unicode.Properties is
       -- emoji-data.txt
       Emoji, Emoji_Presentation, Emoji_Modifier, Emoji_Modifier_Base,
       Emoji_Component, Extended_Pictographic);
-   
-   function Get (Property : Binary_Property; C : Code_Point) return Boolean;
-   function Set_Of (Property : Binary_Property) return Code_Point_Set;
 
    type General_Category is (Uppercase_Letter,
                              Lowercase_Letter,
@@ -68,10 +65,6 @@ package Unicode.Properties is
         Space_Separator .. Paragraph_Separator;
       subtype Other is General_Category range Control .. Unassigned;
    end General_Category_Groupings;
-   
-   
-   function Get_General_Category (C : Code_Point) return General_Category;
-   function Set_Of (Property : General_Category) return Code_Point_Set;
 
    function Lu return General_Category renames Uppercase_Letter;
    function Ll return General_Category renames Lowercase_Letter;
@@ -137,9 +130,6 @@ package Unicode.Properties is
                        Right_To_Left_Isolate,
                        First_Strong_Isolate,
                        Pop_Directional_Isolate);
-   
-   function Get_Bidi_Class (C : Code_Point) return Bidi_Class;
-   function Set_Of (Property : Bidi_Class) return Code_Point_Set;
    
    function L return Bidi_Class renames Left_To_Right;
    function R return Bidi_Class renames Right_To_Left;
@@ -270,8 +260,6 @@ package Unicode.Properties is
       new Wide_Wide_String'("VF"),
       new Wide_Wide_String'("VI"));
    
-   function Set_Of (Property : Line_Break) return Code_Point_Set;
-   
    type East_Asian_Width is (Ambiguous,
                              Fullwidth,
                              Halfwidth,
@@ -279,20 +267,7 @@ package Unicode.Properties is
                              Narrow,
                              Wide);
    
-   function Set_Of (Property : East_Asian_Width) return Code_Point_Set;
-      
-   function Lowercase_Mapping (C : Code_Point) return Wide_Wide_String;
-   function Titlecase_Mapping (C : Code_Point) return Wide_Wide_String;
-   function Uppercase_Mapping (C : Code_Point) return Wide_Wide_String;
-   
-   function Case_Folding (C : Code_Point) return Wide_Wide_String;
-   
-   function Canonical_Decomposition (C : Code_Point) return Wide_Wide_String;
-   
    type Canonical_Combining_Class is range 0 .. 254;
    function Not_Reordered return Canonical_Combining_Class is (0);
-
-   function Get_Canonical_Combining_Class (C : Code_Point)
-                                           return Canonical_Combining_Class;
    
 end Unicode.Properties;

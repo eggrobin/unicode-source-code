@@ -41,14 +41,14 @@ begin
                              ("!!! NFKC_Casefold (" & Unicode.U_Notation (C) &
                               ") is " & Code_Points (NFKC_Casefold_at_U) &
                               " in " & U'Wide_Wide_Image & " and " &
-                              Code_Points (NFKC_Casefold_at_V) &" in "&
+                              Code_Points (NFKC_Casefold_at_V) & " in " &
                               V'Wide_Wide_Image);
                         else
                            Ada.Wide_Wide_Text_IO.Put_Line
                              ("--- NFKC_Casefold (" & Unicode.U_Notation (C) &
                               ") is " & Code_Points (NFKC_Casefold_at_U) &
                               " in " & U'Wide_Wide_Image & " and " &
-                              Code_Points (NFKC_Casefold_at_V) &" in "&
+                              Code_Points (NFKC_Casefold_at_V) & " in " &
                               V'Wide_Wide_Image);
                         end if;
                      end if;

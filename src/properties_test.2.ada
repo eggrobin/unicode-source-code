@@ -22,15 +22,20 @@ begin
          NFKC_CF  : Wide_Wide_String renames UCD.Latest.NFKC_Casefold (C);
          NFKC_SCF : Wide_Wide_String renames UCD.Latest.NFKC_SimpleCasefold (C);
       begin
-      if (NFKC_CF = NFKC_SCF) /= (CF = SCF) then
-         raise Constraint_Error with C;
-      end if;
-      if NFKC_CF /= NFKC_SCF then
-      Ada.Wide_Wide_Text_IO.Put_Line
-        (C & " (" & Unicode.U_Notation (C) & ") : NFKC_CF """ & NFKC_CF &
-         """ (" & Code_Points (NFKC_CF) & ") ≠ NFKC_SCF """ &
-         NFKC_SCF & """ (" & Code_Points (NFKC_SCF) & ")");
-      end if;
+         if (NFKC_CF = NFKC_SCF) /= (CF = SCF) then
+            Ada.Wide_Wide_Text_IO.Put_Line (C & ':' & NFKC_CF & ';' & NFKC_SCF & ';' & CF & ';' & SCF);
+            raise Constraint_Error with Unicode.U_Notation (C);
+         end if;
+         if NFKC_CF /= NFKC_SCF then
+            if CF /= NFKC_CF or SCF /= NFKC_SCF then
+               Ada.Wide_Wide_Text_IO.Put_Line (C & ':' & Code_Points (NFKC_CF) & ';' & Code_Points (NFKC_SCF) & ';' & Code_Points (CF) & ';' & Code_Points (SCF));
+               raise Constraint_Error with Unicode.U_Notation (C);
+            end if;
+            Ada.Wide_Wide_Text_IO.Put_Line
+            (C & " (" & Unicode.U_Notation (C) & ") : CF=NFKC_CF """ & NFKC_CF &
+               """ (" & Code_Points (NFKC_CF) & ") ≠ SCF=NFKC_SCF """ &
+               NFKC_SCF & """ (" & Code_Points (NFKC_SCF) & ")");
+         end if;
       end;
    end loop;
 end Properties_Test;

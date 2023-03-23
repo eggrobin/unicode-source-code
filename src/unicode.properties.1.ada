@@ -16,7 +16,8 @@ package Unicode.Properties is
       Other_Math, Other_Uppercase, Pattern_Syntax, Pattern_White_Space,
       Prepended_Concatenation_Mark, Quotation_Mark, Radical, Regional_Indicator,
       Sentence_Terminal, Soft_Dotted, Terminal_Punctuation, Unified_Ideograph,
-      Variation_Selector, White_Space,
+      Variation_Selector, White_Space, IDS_Unary_Operator, ID_Compat_Math_Continue,
+      ID_Compat_Math_Start,
       -- UnicodeData.txt (but we get it from DerivedBinaryProperties.txt).
       Bidi_Mirrored,
       -- emoji-data.txt

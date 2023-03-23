@@ -47,12 +47,19 @@ package body Unicode.Character_Database is
       else (1 => UCD.Simple_Uppercase_Mapping (C)));
 
    function Case_Folding (UCD : Database; C : Code_Point) return Wide_Wide_String is
-   (if UCD.Full_Case_Folding (C) = null then (1 => C)
+   (if UCD.Full_Case_Folding (C) = null then (1 => UCD.Simple_Case_Folding (C))
       else UCD.Full_Case_Folding (C).all);
+
+   function Simple_Case_Folding (UCD : Database; C : Code_Point) return Code_Point is
+   (UCD.Simple_Case_Folding (C));
    
    function NFKC_Casefold (UCD: Database; C : Code_Point) return Wide_Wide_String is
    (if UCD.Nontrivial_NFKC_Casefold (C) = null then (1 => C)
       else UCD.Nontrivial_NFKC_Casefold (C).all);
+   
+   function NFKC_SimpleCasefold (UCD: Database; C : Code_Point) return Wide_Wide_String is
+   (if UCD.Nontrivial_NFKC_SimpleCasefold (C) = null then (1 => C)
+      else UCD.Nontrivial_NFKC_SimpleCasefold (C).all);
    
    function Canonical_Decomposition (UCD : Database; C : Code_Point) return Wide_Wide_String is
    begin
@@ -401,6 +408,7 @@ package body Unicode.Character_Database is
    new Unicode.Character_Database.Parser.Process_File (Process_Case_Folding_Field); 
 
    Is_NFKC_CF_Record : Boolean := False;
+   Is_NFKC_SCF_Record : Boolean := False;
    
    procedure Process_Normalization_Field
    (Scope  : Code_Point_Range;
@@ -410,19 +418,30 @@ package body Unicode.Character_Database is
       case Number is
          when 1 =>
             Is_NFKC_CF_Record := Field = "NFKC_CF";
+            Is_NFKC_SCF_Record := Field = "NFKC_SCF";
          when 2 =>
-            if not Is_NFKC_CF_Record then
-               return;
+            if Is_NFKC_CF_Record then
+               declare 
+                  Value : constant Special_Mapping_Value :=
+                     (if Field = "<code point>" then null
+                     else new Wide_Wide_String'(Parser.Parse_Sequence (Field)));
+               begin
+                  for C in Scope.Low .. Scope.High loop
+                     UCD.Nontrivial_NFKC_Casefold (C) := Value;
+                  end loop;
+               end;
             end if;
-            declare 
-               Value : constant Special_Mapping_Value :=
-                  (if Field = "<code point>" then null
-                   else new Wide_Wide_String'(Parser.Parse_Sequence (Field)));
-            begin
-               for C in Scope.Low .. Scope.High loop
-                  UCD.Nontrivial_NFKC_Casefold (C) := Value;
-               end loop;
-            end;
+            if Is_NFKC_SCF_Record then
+               declare 
+                  Value : constant Special_Mapping_Value :=
+                     (if Field = "<code point>" then null
+                     else new Wide_Wide_String'(Parser.Parse_Sequence (Field)));
+               begin
+                  for C in Scope.Low .. Scope.High loop
+                     UCD.Nontrivial_NFKC_SimpleCasefold (C) := Value;
+                  end loop;
+               end;
+            end if;
          when others => null;
       end case;
    end Process_Normalization_Field;

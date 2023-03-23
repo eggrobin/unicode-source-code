@@ -15,47 +15,22 @@ procedure Properties_Test is
           Unicode.U_Notation (S (S'First)) & ", " &
           Code_Points (S (S'First + 1 .. S'Last)));
 begin
-   for V in Unicode.Version range Unicode.Version_5_2_0 .. Unicode.Version'Last
-   loop
-      if UCD.Version (V).Get_General_Category ('a') = Unassigned then
-         raise Constraint_Error;
+   for C in Unicode.Code_Point loop
+      declare
+         CF  : Wide_Wide_String renames UCD.Latest.Case_Folding (C);
+         SCF : Wide_Wide_String := [UCD.Latest.Simple_Case_Folding (C)];
+         NFKC_CF  : Wide_Wide_String renames UCD.Latest.NFKC_Casefold (C);
+         NFKC_SCF : Wide_Wide_String renames UCD.Latest.NFKC_SimpleCasefold (C);
+      begin
+      if (NFKC_CF = NFKC_SCF) /= (CF = SCF) then
+         raise Constraint_Error with C;
       end if;
-   end loop;
-   for U in Unicode.Version range Unicode.Version_5_2_0 .. Unicode.Version'Last
-   loop
-      for C in Unicode.Code_Point loop
-         if UCD.Version (U).Get_General_Category (C) /= Unassigned then
-            declare
-               NFKC_Casefold_at_U :
-                 Wide_Wide_String renames UCD.Version (U).NFKC_Casefold (C);
-            begin
-               for V in Unicode.Version range U .. Unicode.Version'Last loop
-                  declare
-                     NFKC_Casefold_at_V :
-                       Wide_Wide_String renames
-                       UCD.Version (V).NFKC_Casefold (C);
-                  begin
-                     if NFKC_Casefold_at_V /= NFKC_Casefold_at_U then
-                        if UCD.Version (U).Get (XID_Continue, C) then
-                           Ada.Wide_Wide_Text_IO.Put_Line
-                             ("!!! NFKC_Casefold (" & Unicode.U_Notation (C) &
-                              ") is " & Code_Points (NFKC_Casefold_at_U) &
-                              " in " & U'Wide_Wide_Image & " and " &
-                              Code_Points (NFKC_Casefold_at_V) & " in " &
-                              V'Wide_Wide_Image);
-                        else
-                           Ada.Wide_Wide_Text_IO.Put_Line
-                             ("--- NFKC_Casefold (" & Unicode.U_Notation (C) &
-                              ") is " & Code_Points (NFKC_Casefold_at_U) &
-                              " in " & U'Wide_Wide_Image & " and " &
-                              Code_Points (NFKC_Casefold_at_V) & " in " &
-                              V'Wide_Wide_Image);
-                        end if;
-                     end if;
-                  end;
-               end loop;
-            end;
-         end if;
-      end loop;
+      if NFKC_CF /= NFKC_SCF then
+      Ada.Wide_Wide_Text_IO.Put_Line
+        (C & " (" & Unicode.U_Notation (C) & ") : NFKC_CF """ & NFKC_CF &
+         """ (" & Code_Points (NFKC_CF) & ") ≠ NFKC_SCF """ &
+         NFKC_SCF & """ (" & Code_Points (NFKC_SCF) & ")");
+      end if;
+      end;
    end loop;
 end Properties_Test;

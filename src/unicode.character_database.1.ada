@@ -27,8 +27,10 @@ package Unicode.Character_Database is
    function Uppercase_Mapping (UCD: Database; C : Code_Point) return Wide_Wide_String;
    
    function Case_Folding (UCD: Database; C : Code_Point) return Wide_Wide_String;
+   function Simple_Case_Folding (UCD: Database; C : Code_Point) return Code_Point;
    
    function NFKC_Casefold (UCD: Database; C : Code_Point) return Wide_Wide_String;
+   function NFKC_SimpleCasefold (UCD: Database; C : Code_Point) return Wide_Wide_String;
    
    function Canonical_Decomposition (UCD: Database; C : Code_Point) return Wide_Wide_String;
 
@@ -85,6 +87,7 @@ private
          Full_Case_Folding         : Special_Mapping := (others => null);
          Canonical_Mapping         : Special_Mapping := (others => null);
          Nontrivial_NFKC_Casefold  : Special_Mapping := (others => null);
+         Nontrivial_NFKC_SimpleCasefold  : Special_Mapping := (others => null);
       end record;
 
 end Unicode.Character_Database;

@@ -49,7 +49,7 @@ begin
             end if;
          end if;
          if NFKC_CF /= NFKC_SCF then
-            if SCF /= NFKC_SCF and then CF /= NFKC_CF then
+            if SCF /= NFKC_SCF then
                Ada.Wide_Wide_Text_IO.Put_Line (C & ':' & Code_Points (NFKC_CF) & ';' & Code_Points (NFKC_SCF) & ';' & Code_Points (CF) & ';' & Code_Points (SCF));
                raise Constraint_Error with Unicode.U_Notation (C);
             end if;

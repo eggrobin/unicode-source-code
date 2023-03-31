@@ -22,6 +22,9 @@ begin
          NFKC_CF  : Wide_Wide_String renames UCD.Latest.NFKC_Casefold (C);
          NFKC_SCF : Wide_Wide_String renames UCD.Latest.NFKC_SimpleCasefold (C);
       begin
+         if CF /= SCF or else NFKC_CF /= NFKC_SCF then
+            Ada.Wide_Wide_Text_IO.Put ("[");
+         end if;
          if CF = SCF and then NFKC_CF /= NFKC_SCF then
             Ada.Wide_Wide_Text_IO.Put_Line (C & ':' & Code_Points (NFKC_CF) & ';' & Code_Points (NFKC_SCF) & ';' & Code_Points (CF) & ';' & Code_Points (SCF));
             raise Constraint_Error with Unicode.U_Notation (C);
@@ -29,17 +32,17 @@ begin
          if NFKC_CF = NFKC_SCF and then CF /= SCF then
             if NFKC_CF = CF then
                Ada.Wide_Wide_Text_IO.Put_Line
-               (C & " (" & Unicode.U_Notation (C) & ") : NFKC_CF = NFKC_SCF = CF """ & NFKC_CF &
+               ("+--] " & C & " (" & Unicode.U_Notation (C) & ") : NFKC_CF = NFKC_SCF = CF """ & NFKC_CF &
                   """ (" & Code_Points (NFKC_CF) & ") ≠ SCF """ &
                   SCF & """ (" & Code_Points (SCF) & ")");
             elsif NFKC_CF = SCF then
                Ada.Wide_Wide_Text_IO.Put_Line
-               (C & " (" & Unicode.U_Notation (C) & ") : NFKC_CF = NFKC_SCF = SCF """ & NFKC_CF &
+               ("--+] " & C & " (" & Unicode.U_Notation (C) & ") : NFKC_CF = NFKC_SCF = SCF """ & NFKC_CF &
                   """ (" & Code_Points (NFKC_CF) & ") ≠ CF """ &
                   CF & """ (" & Code_Points (CF) & ")");
             else
                Ada.Wide_Wide_Text_IO.Put_Line
-               (C & " (" & Unicode.U_Notation (C) & ") : SCF """ &
+               ("-+-] " & C & " (" & Unicode.U_Notation (C) & ") : SCF """ &
                   SCF & """ (" & Code_Points (SCF) & ") ≠ NFKC_SCF = NFKC_CF """ & NFKC_CF &
                   """ (" & Code_Points (NFKC_CF) & ") ≠ CF """ &
                   CF & """ (" & Code_Points (CF) & ")");
@@ -52,12 +55,12 @@ begin
             end if;
             if CF /= NFKC_CF then
                Ada.Wide_Wide_Text_IO.Put_Line
-               (C & " (" & Unicode.U_Notation (C) & ") : NFKC_CF """ & NFKC_CF &""" (" & Code_Points (NFKC_CF) & ") ≠ CF """ & CF &
+               ("***] " & C & " (" & Unicode.U_Notation (C) & ") : NFKC_CF """ & NFKC_CF &""" (" & Code_Points (NFKC_CF) & ") ≠ CF """ & CF &
                   """ (" & Code_Points (CF) & ") ≠ SCF=NFKC_SCF """ &
                   NFKC_SCF & """ (" & Code_Points (NFKC_SCF) & ")");
             else
                Ada.Wide_Wide_Text_IO.Put_Line
-               ("--- "&C & " (" & Unicode.U_Notation (C) & ") : CF=NFKC_CF """ & NFKC_CF &
+               ("---] "&C & " (" & Unicode.U_Notation (C) & ") : CF=NFKC_CF """ & NFKC_CF &
                   """ (" & Code_Points (NFKC_CF) & ") ≠ SCF=NFKC_SCF """ &
                   NFKC_SCF & """ (" & Code_Points (NFKC_SCF) & ")");
             end if;

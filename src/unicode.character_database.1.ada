@@ -27,6 +27,7 @@ package Unicode.Character_Database is
    function Uppercase_Mapping (UCD: Database; C : Code_Point) return Wide_Wide_String;
    
    function Case_Folding (UCD: Database; C : Code_Point) return Wide_Wide_String;
+   function Simple_Case_Folding (UCD: Database; C : Code_Point) return Code_Point;
    
    function NFKC_Casefold (UCD: Database; C : Code_Point) return Wide_Wide_String;
    

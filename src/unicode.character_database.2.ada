@@ -47,8 +47,11 @@ package body Unicode.Character_Database is
       else (1 => UCD.Simple_Uppercase_Mapping (C)));
 
    function Case_Folding (UCD : Database; C : Code_Point) return Wide_Wide_String is
-   (if UCD.Full_Case_Folding (C) = null then (1 => C)
+   (if UCD.Full_Case_Folding (C) = null then (1 => UCD.Simple_Case_Folding (C))
       else UCD.Full_Case_Folding (C).all);
+
+   function Simple_Case_Folding (UCD : Database; C : Code_Point) return Code_Point is
+   (UCD.Simple_Case_Folding (C));
    
    function NFKC_Casefold (UCD: Database; C : Code_Point) return Wide_Wide_String is
    (if UCD.Nontrivial_NFKC_Casefold (C) = null then (1 => C)

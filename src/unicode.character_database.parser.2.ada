@@ -114,12 +114,21 @@ package body Unicode.Character_Database.Parser is
          if Line_Last = 0 then
             Line_Last       := Text'Last;
             Next_Line_First := Line_Last + 1;
-         else            Find_Token (Text,
-                                     From  => Line_Last,
-                                     Test  => Inside, Set => Line_Terminator,
-                                     First => Unused,
-                                     Last  => Next_Line_First);
-            Next_Line_First := Next_Line_First + 1;
+         else
+            declare
+               Last_Line_Terminator : Natural;
+            begin
+               Find_Token (Text,
+                           From  => Line_Last,
+                           Test  => Inside, Set => Line_Terminator,
+                           First => Unused,
+                           Last  => Last_Line_Terminator);
+               if Last_Line_Terminator = 0 then
+                  Next_Line_First := Text'Last + 1;
+               else
+                  Next_Line_First := Last_Line_Terminator + 1;
+               end if;
+            end;
          end if;
          if Next_Line_First > Text'Last and then
            Text (Line_First .. Line_Last) /= "# EOF" then

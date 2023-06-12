@@ -1,82 +1,38 @@
-with Ada.Wide_Wide_Text_IO;
-
-with Unicode.Character_Database;
-with Unicode.Properties;
-
-use all type Unicode.Properties.Binary_Property;
-use all type Unicode.Properties.General_Category;
+with Ada.Exceptions;
+with Ada.Text_IO;
 
 procedure Properties_Test is
-   package UCD renames Unicode.Character_Database;
-   function Code_Points (S : Wide_Wide_String) return Wide_Wide_String is
-     (case S'Length is when 0 => "",
-        when 1 => Unicode.U_Notation (S (S'First)),
-        when others =>
-          Unicode.U_Notation (S (S'First)) & ", " &
-          Code_Points (S (S'First + 1 .. S'Last)));
+
+   subtype High_Surrogate is Wide_Character
+      range Wide_Character'Val (16#D800#) .. Wide_Character'Val (16#DB7F#);
+   subtype Low_Surrogate is Wide_Character
+      range Wide_Character'Val (16#DC00#) .. Wide_Character'Val (16#DFFF#);
+   subtype UTF_16_String is Wide_String
+      with Dynamic_Predicate =>
+      (for all I in UTF_16_String'Range =>
+         (if UTF_16_String (I) in High_Surrogate then
+            I + 1 in UTF_16_String'Range and then
+               UTF_16_String (I + 1) in Low_Surrogate));
+   subtype Code_Point is Wide_Wide_Character range
+      Wide_Wide_Character'Val (0) .. Wide_Wide_Character'Val (16#10FFFF#);
+   subtype Scalar_Value is Code_Point with
+      Static_Predicate => Scalar_Value not in
+         Code_Point'Val (16#D800#) .. Code_Point'Val (16#DFFF#);
+   subtype UTF_32_String is Wide_Wide_String
+      with Dynamic_Predicate => (for all Code_Unit of UTF_32_String => Code_Unit in Scalar_Value);
+
+   E_Acute  : String      := Character'Val(16#C3#) & Character'Val(16#A9#);
+   Egg      : UTF_16_String := Wide_Character'Val(16#D808#) & Wide_Character'Val(16#DE6D#);
+   Eggs     : UTF_16_String := Egg & Egg;
+   Wide_Wide_Egg : UTF_32_String := "𒉭𒉭";
 begin
-   for V in Unicode.Version range Unicode.Version_4_1_0 .. Unicode.Version'Last
-   loop
-      if UCD.Version (V).Get_General_Category ('a') = Unassigned then
-         raise Constraint_Error;
-      end if;
-   end loop;
-   for U in Unicode.Version range Unicode.Version_4_1_0 .. Unicode.Version'Last
-   loop
-      for C in Unicode.Code_Point loop
-         if UCD.Version (U).Get_General_Category (C) /= Unassigned then
-            declare
-               SCF_at_U :
-                 Unicode.Code_Point renames UCD.Version (U).Simple_Case_Folding (C);
-               CF_at_U :
-                 Wide_Wide_String renames UCD.Version (U).Case_Folding (C);
-            begin
-               for V in Unicode.Version range U .. Unicode.Version'Last loop
-                  declare
-                     SCF_at_V :
-                       Unicode.Code_Point renames
-                       UCD.Version (V).Simple_Case_Folding (C);
-                     CF_at_V :
-                       Wide_Wide_String renames UCD.Version (V).Case_Folding (C);
-                  begin
-                     if SCF_at_V /= SCF_at_U then
-                        if UCD.Version (U).Get (XID_Continue, C) then
-                           Ada.Wide_Wide_Text_IO.Put_Line
-                             ("!!! SCF (" & Unicode.U_Notation (C) &
-                              ") is " & Unicode.U_Notation (SCF_at_U) &
-                              " in " & U'Wide_Wide_Image & " and " &
-                              Unicode.U_Notation (SCF_at_V) &" in "&
-                              V'Wide_Wide_Image);
-                        else
-                           Ada.Wide_Wide_Text_IO.Put_Line
-                             ("--- SCF (" & Unicode.U_Notation (C) &
-                              ") is " & Unicode.U_Notation (SCF_at_U) &
-                              " in " & U'Wide_Wide_Image & " and " &
-                              Unicode.U_Notation (SCF_at_V) &" in "&
-                              V'Wide_Wide_Image);
-                        end if;
-                     end if;
-                     if CF_at_V /= CF_at_U then
-                        if UCD.Version (U).Get (XID_Continue, C) then
-                           Ada.Wide_Wide_Text_IO.Put_Line
-                             ("!!! CF (" & Unicode.U_Notation (C) &
-                              ") is " & Code_Points (CF_at_U) &
-                              " in " & U'Wide_Wide_Image & " and " &
-                              Code_Points (CF_at_V) &" in "&
-                              V'Wide_Wide_Image);
-                        else
-                           Ada.Wide_Wide_Text_IO.Put_Line
-                             ("--- CF (" & Unicode.U_Notation (C) &
-                              ") is " & Code_Points (CF_at_U) &
-                              " in " & U'Wide_Wide_Image & " and " &
-                              Code_Points (CF_at_V) &" in "&
-                              V'Wide_Wide_Image);
-                        end if;
-                     end if;
-                  end;
-               end loop;
-            end;
-         end if;
-      end loop;
-   end loop;
+   Ada.Text_IO.Put_Line (Boolean'Image (Egg in UTF_16_String));
+   Ada.Text_IO.Put_Line (Boolean'Image (Eggs in UTF_16_String));
+   Ada.Text_IO.Put_Line (Boolean'Image (Wide_Wide_Egg in UTF_32_String));
+   Egg := Eggs (1 .. 2);
+   Ada.Text_IO.Put_Line (Boolean'Image (Egg in UTF_16_String));
+   Egg := Eggs (2 .. 3);
+   Ada.Text_IO.Put_Line (Boolean'Image (Egg in UTF_16_String));
+   Wide_Wide_Egg (1) := Wide_Wide_Character'Val (Wide_Character'Pos (Egg (1)));
+   Ada.Text_IO.Put_Line (Boolean'Image (Wide_Wide_Egg in UTF_32_String));
 end Properties_Test;

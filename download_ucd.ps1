@@ -1,4 +1,5 @@
-foreach ($version in @("4.1.0",
+foreach ($version in @("4.0.0",
+                       "4.1.0",
                        "5.0.0",
                        "5.1.0",
                        "5.2.0",

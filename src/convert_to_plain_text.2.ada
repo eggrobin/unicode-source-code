@@ -29,7 +29,7 @@ procedure Convert_To_Plain_Text is
 
    package UCD renames Unicode.Character_Database;
 
-   -- 2.2 (13/3) and 2/3, with no additional implementation-defined
+   -- 2.2 (13/3) and (2/3), with no additional implementation-defined
    -- representations for an end of line.
    Line_Terminators : constant Code_Point_Set :=
      To_Set (Sequence =>

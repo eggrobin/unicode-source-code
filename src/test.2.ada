@@ -19,7 +19,7 @@ begin
    --متغیر A خالی نیست.
    I := A.all;
    <<שגיאה>> רשם (הודעה); -- משהו השתבש.
-   I := -- א'  1-2;
+   I := -- א' 1-2;
    for Hebrew_Letter in Wide_Character range 'ת' .. 'א' loop
       null;
    end loop;
@@ -34,3 +34,4 @@ begin
    -- This is fine.
    Ada.Wide_Wide_Text_IO.Put_Line ("⁨‫YouTube تابعة لشركة Google⁩");
 end Test;
+

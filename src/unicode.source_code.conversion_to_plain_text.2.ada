@@ -1,6 +1,7 @@
 with Ada.Strings.Wide_Wide_Bounded;
 with Ada.Strings.Wide_Wide_Unbounded;
 
+with Unicode.Character_Database;
 with Unicode.Properties;
 
 with Ada.Wide_Wide_Text_IO;
@@ -11,6 +12,8 @@ use all type Unicode.Properties.Bidi_Class;
 use all type Unicode.Properties.Binary_Property;
 
 package body Unicode.Source_Code.Conversion_To_Plain_Text is
+
+   package UCD renames Unicode.Character_Database;
    
    LRM : constant Code_Point := Code_Point'Val (16#200E#);
    -- These are functions so that they are overloaded with the Bidi_Class.
@@ -44,7 +47,7 @@ package body Unicode.Source_Code.Conversion_To_Plain_Text is
             Filtered_Atom : Bounded_By_Atom_Length.Bounded_Wide_Wide_String;
          begin
             for C of Atom loop
-               if not Get (Default_Ignorable_Code_Point, C) then
+               if not UCD.Latest.Get (Default_Ignorable_Code_Point, C) then
                   Bounded_By_Atom_Length.Append (Filtered_Atom, C);
                end if;
             end loop;
@@ -68,7 +71,7 @@ package body Unicode.Source_Code.Conversion_To_Plain_Text is
    begin
       
       if Properties.Kind = Line_Termination and then
-        Get_Bidi_Class (Atom (Atom'First)) = B then
+        UCD.Latest.Get_Bidi_Class (Atom (Atom'First)) = B then
          Converter.Needs_LRM := False;
       end if;
 
@@ -79,7 +82,7 @@ package body Unicode.Source_Code.Conversion_To_Plain_Text is
          else 
             First_Strong_Or_Number_Or_Explicit :
             for C of Atom loop
-               case Get_Bidi_Class (C) is
+               case UCD.Latest.Get_Bidi_Class (C) is
                   when R | AL | EN | AN | LRE | RLE | LRI | RLI | FSI =>
                      raise Constraint_Error;
                   when L => exit First_Strong_Or_Number_Or_Explicit;
@@ -93,7 +96,7 @@ package body Unicode.Source_Code.Conversion_To_Plain_Text is
         Atom (Atom'First) /= FSI then
          First_Strong_Or_Explicit :
          for C of Atom loop
-            case Get_Bidi_Class (C) is
+            case UCD.Latest.Get_Bidi_Class (C) is
                when L => exit First_Strong_Or_Explicit;
                when R | AL | LRE | RLE | LRI | RLI | FSI =>
                   Prefix_FSI := True;
@@ -113,7 +116,7 @@ package body Unicode.Source_Code.Conversion_To_Plain_Text is
          Unmatched_Embeddings : Natural := 0;
       begin
          for C of Atom loop
-            case Get_Bidi_Class (C) is
+            case UCD.Latest.Get_Bidi_Class (C) is
                when LRI | RLI | FSI =>
                   Unmatched_Isolates := Unmatched_Isolates + 1;
                when PDI =>
@@ -134,7 +137,7 @@ package body Unicode.Source_Code.Conversion_To_Plain_Text is
          end loop;
          
          if not Lookahead.End_Of_File and then
-           Get_Bidi_Class (Lookahead.Next) /= B then
+           UCD.Latest.Get_Bidi_Class (Lookahead.Next) /= B then
             if Unmatched_Embeddings + Unmatched_Isolates > 0 then
                if Properties.Kind = Comment_Content then
                   Ada.Wide_Wide_Text_IO.Put_Line (U_Notation (Lookahead.Next));
@@ -146,7 +149,7 @@ package body Unicode.Source_Code.Conversion_To_Plain_Text is
                     ("Unmatched explicit directional formatting characters " &
                        "outside a comment:");
                   for C of Atom loop
-                     if Get (Default_Ignorable_Code_Point, C) then
+                     if UCD.Latest.Get (Default_Ignorable_Code_Point, C) then
                         Ada.Wide_Wide_Text_IO.Put (U_Notation (C));
                      else
                         Ada.Wide_Wide_Text_IO.Put (C);
@@ -157,7 +160,7 @@ package body Unicode.Source_Code.Conversion_To_Plain_Text is
             else
                Last_Strong_Or_Explicit :
                for C of reverse Atom loop
-                  case Get_Bidi_Class (C) is
+                  case UCD.Latest.Get_Bidi_Class (C) is
                      when L => exit Last_Strong_Or_Explicit;
                      when R | AL | PDF | PDI =>
                         Converter.Needs_LRM := True;

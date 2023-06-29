@@ -13,6 +13,7 @@ use Ada.Strings.Wide_Wide_Unbounded;
 
 with Unicode;
 with Unicode.IO;
+with Unicode.Character_Database;
 with Unicode.Properties;
 with Unicode.Source_Code.Conversion_To_Plain_Text;
 
@@ -26,6 +27,8 @@ use all type Unicode.Source_Code.Conversion_To_Plain_Text.Source_Code_Converter;
 
 procedure Convert_To_Plain_Text is
 
+   package UCD renames Unicode.Character_Database;
+
    -- 2.2 (13/3) and 2/3, with no additional implementation-defined
    -- representations for an end of line.
    Line_Terminators : constant Code_Point_Set :=
@@ -33,19 +36,19 @@ procedure Convert_To_Plain_Text is
                (Code_Point'Val (16#0A#), Code_Point'Val (16#0B#),
                 Code_Point'Val (16#0C#), Code_Point'Val (16#0D#),
                 Code_Point'Val (16#85#))) or
-     Set_Of (Line_Separator) or Set_Of (Paragraph_Separator);
+     UCD.Latest.Set_Of (Line_Separator) or UCD.Latest.Set_Of (Paragraph_Separator);
 
    -- 2.3 (3/2 .. 5/3). The end of the line is treated separately.
    White_Space_Characters : constant Code_Point_Set :=
-     Set_Of (Space_Separator) or
+     UCD.Latest.Set_Of (Space_Separator) or
      To_Set (Code_Point'Val (16#09#));
 
    -- 2.3 (7.1/3).
    White_Space_Atom_Characters : constant Code_Point_Set :=
-     White_Space_Characters or Set_Of (Format);
+     White_Space_Characters or UCD.Latest.Set_Of (Format);
 
    Syntax_Characters     : constant Code_Point_Set :=
-     Set_Of (Pattern_Syntax) - To_Set ("∂∇∞");
+     UCD.Latest.Set_Of (Pattern_Syntax) - To_Set ("∂∇∞");
 
    type Simple_Atom_Definition is
       record

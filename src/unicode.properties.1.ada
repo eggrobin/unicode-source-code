@@ -18,10 +18,10 @@ package Unicode.Properties is
       Sentence_Terminal, Soft_Dotted, Terminal_Punctuation, Unified_Ideograph,
       Variation_Selector, White_Space,
       -- UnicodeData.txt (but we get it from DerivedBinaryProperties.txt).
-      Bidi_Mirrored);
-   
-   function Get (Property : Binary_Property; C : Code_Point) return Boolean;
-   function Set_Of (Property : Binary_Property) return Code_Point_Set;
+      Bidi_Mirrored,
+      -- emoji-data.txt
+      Emoji, Emoji_Presentation, Emoji_Modifier, Emoji_Modifier_Base,
+      Emoji_Component, Extended_Pictographic);
 
    type General_Category is (Uppercase_Letter,
                              Lowercase_Letter,
@@ -65,10 +65,6 @@ package Unicode.Properties is
         Space_Separator .. Paragraph_Separator;
       subtype Other is General_Category range Control .. Unassigned;
    end General_Category_Groupings;
-   
-   
-   function Get_General_Category (C : Code_Point) return General_Category;
-   function Set_Of (Property : General_Category) return Code_Point_Set;
 
    function Lu return General_Category renames Uppercase_Letter;
    function Ll return General_Category renames Lowercase_Letter;
@@ -135,9 +131,6 @@ package Unicode.Properties is
                        First_Strong_Isolate,
                        Pop_Directional_Isolate);
    
-   function Get_Bidi_Class (C : Code_Point) return Bidi_Class;
-   function Set_Of (Property : Bidi_Class) return Code_Point_Set;
-   
    function L return Bidi_Class renames Left_To_Right;
    function R return Bidi_Class renames Right_To_Left;
    function AL return Bidi_Class renames Arabic_Letter;
@@ -164,5 +157,117 @@ package Unicode.Properties is
    function RLI return Bidi_Class renames Right_To_Left_Isolate;
    function FSI return Bidi_Class renames First_Strong_Isolate;
    function PDI return Bidi_Class renames Pop_Directional_Isolate;
+        
+   type Line_Break is (Ambiguous,
+                       Alphabetic,
+                       Break_Both,
+                       Break_After,
+                       Break_Before,
+                       Mandatory_Break,
+                       Contingent_Break,
+                       Conditional_Japanese_Starter,
+                       Close_Punctuation,
+                       Combining_Mark,
+                       Close_Parenthesis,
+                       Carriage_Return,
+                       E_Base,
+                       E_Modifier,
+                       Exclamation,
+                       Glue,
+                       H2,
+                       H3,
+                       Hebrew_Letter,
+                       Hyphen,
+                       Ideographic,
+                       Inseparable,
+                       Infix_Numeric,
+                       JL,
+                       JT,
+                       JV,
+                       Line_Feed,
+                       Next_Line,
+                       Nonstarter,
+                       Numeric,
+                       Open_Punctuation,
+                       Postfix_Numeric,
+                       Prefix_Numeric,
+                       Quotation,
+                       Regional_Indicator,
+                       Complex_Context,
+                       Surrogate,
+                       Space,
+                       Break_Symbols,
+                       Word_Joiner,
+                       Unknown,
+                       ZWSpace,
+                       ZWJ,
+                       -- Proposed
+                       Aksara,
+                       Aksara_Prebase,
+                       Aksara_Start,
+                       Virama_Final,
+                       Virama);
+   
+   type Line_Break_Alias is not null access constant Wide_Wide_String;
+   Line_Break_Aliases : constant array (Line_Break) of Line_Break_Alias :=
+     (new Wide_Wide_String'("AI"),
+      new Wide_Wide_String'("AL"),
+      new Wide_Wide_String'("B2"),
+      new Wide_Wide_String'("BA"),
+      new Wide_Wide_String'("BB"),
+      new Wide_Wide_String'("BK"),
+      new Wide_Wide_String'("CB"),
+      new Wide_Wide_String'("CJ"),
+      new Wide_Wide_String'("CL"),
+      new Wide_Wide_String'("CM"),
+      new Wide_Wide_String'("CP"),
+      new Wide_Wide_String'("CR"),
+      new Wide_Wide_String'("EB"),
+      new Wide_Wide_String'("EM"),
+      new Wide_Wide_String'("EX"),
+      new Wide_Wide_String'("GL"),
+      new Wide_Wide_String'("H2"),
+      new Wide_Wide_String'("H3"),
+      new Wide_Wide_String'("HL"),
+      new Wide_Wide_String'("HY"),
+      new Wide_Wide_String'("ID"),
+      new Wide_Wide_String'("IN"),
+      new Wide_Wide_String'("IS"),
+      new Wide_Wide_String'("JL"),
+      new Wide_Wide_String'("JT"),
+      new Wide_Wide_String'("JV"),
+      new Wide_Wide_String'("LF"),
+      new Wide_Wide_String'("NL"),
+      new Wide_Wide_String'("NS"),
+      new Wide_Wide_String'("NU"),
+      new Wide_Wide_String'("OP"),
+      new Wide_Wide_String'("PO"),
+      new Wide_Wide_String'("PR"),
+      new Wide_Wide_String'("QU"),
+      new Wide_Wide_String'("RI"),
+      new Wide_Wide_String'("SA"),
+      new Wide_Wide_String'("SG"),
+      new Wide_Wide_String'("SP"),
+      new Wide_Wide_String'("SY"),
+      new Wide_Wide_String'("WJ"),
+      new Wide_Wide_String'("XX"),
+      new Wide_Wide_String'("ZW"),
+      new Wide_Wide_String'("ZWJ"),
+        -- Proposed
+      new Wide_Wide_String'("AK"),
+      new Wide_Wide_String'("AP"),
+      new Wide_Wide_String'("AS"),
+      new Wide_Wide_String'("VF"),
+      new Wide_Wide_String'("VI"));
+   
+   type East_Asian_Width is (Ambiguous,
+                             Fullwidth,
+                             Halfwidth,
+                             Neutral,
+                             Narrow,
+                             Wide);
+   
+   type Canonical_Combining_Class is range 0 .. 254;
+   function Not_Reordered return Canonical_Combining_Class is (0);
    
 end Unicode.Properties;

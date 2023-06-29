@@ -13,8 +13,10 @@ package Unicode is
    subtype Code_Point_Set is Ada.Strings.Wide_Wide_Maps.Wide_Wide_Character_Set;
    use all type Code_Point_Set;
    Null_Set : Code_Point_Set renames Ada.Strings.Wide_Wide_Maps.Null_Set;
+   Codespace : constant Code_Point_Set := To_Set (Span => (Code_Point'First,
+                                                           Code_Point'Last));
 
-   subtype Code_Point_Range Is
+   subtype Code_Point_Range is
      Ada.Strings.Wide_Wide_Maps.Wide_Wide_Character_Range;
    use all type Code_Point_Range;
 
@@ -35,4 +37,23 @@ package Unicode is
    function U_Notation (C : Code_Point) return Wide_Wide_String;
    function U_Notation (R     : Code_Point_Range;
                         Style : Range_Style := En_Dash) return Wide_Wide_String;
+
+   type Version is (Version_4_1_0,
+                    Version_5_0_0,
+                    Version_5_1_0,
+                    Version_5_2_0,
+                    Version_6_0_0,
+                    Version_6_1_0,
+                    Version_6_2_0,
+                    Version_6_3_0,
+                    Version_7_0_0,
+                    Version_8_0_0,
+                    Version_9_0_0,
+                    Version_10_0_0,
+                    Version_11_0_0,
+                    Version_12_0_0,
+                    Version_12_1_0,
+                    Version_13_0_0,
+                    Version_14_0_0,
+                    Version_15_0_0);              
 end Unicode;

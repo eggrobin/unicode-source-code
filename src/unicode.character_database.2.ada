@@ -1,226 +1,473 @@
-with Ada.Exceptions;
-with Ada.Strings.UTF_Encoding;
-with Ada.Strings.Wide_Wide_Fixed;
-with Ada.Text_IO;
-with Ada.Wide_Wide_Characters.Handling;
-with Ada.Wide_Wide_Text_IO;
-
-with Unicode.IO;
-
-use Ada.Strings;
-use type Ada.Strings.UTF_Encoding.Encoding_Scheme;
-use Ada.Strings.Wide_Wide_Fixed;
+with Ada.Directories;
+with Unicode.Character_Database.Parser;
 
 package body Unicode.Character_Database is
 
-   type Line_Number is new Positive;
+   function Get (UCD: Database; Property : Binary_Property; C : Code_Point) return Boolean is
+   (UCD.Binary_Properties (Property).Values (C));
    
-   function Get_Line_Terminator_Set return Code_Point_Set is
-      Set : Code_Point_Set := Null_Set;
+   function Set_Of (UCD: Database; Property : Binary_Property) return Code_Point_Set is
+   (UCD.Binary_Properties (Property).Set);
+
+   function Get_General_Category (UCD: Database; C : Code_Point) return General_Category
+   is (UCD.General_Categories.Values (C));
+   function Set_Of (UCD: Database; Property : General_Category) return Code_Point_Set
+   is (UCD.General_Categories.Sets (Property));
+
+   function Get_Bidi_Class (UCD: Database; C : Code_Point) return Bidi_Class
+   is (UCD.Bidi_Classes.Values (C));
+   function Set_Of (UCD: Database; Property : Bidi_Class) return Code_Point_Set
+   is (UCD.Bidi_Classes.Sets (Property));
+      
+   function Set_Of (UCD: Database; Property : Line_Break) return Code_Point_Set
+   is (UCD.Line_Breaking_Classes.Sets (Property));
+      
+   function Set_Of (UCD: Database; Property : East_Asian_Width) return Code_Point_Set
+   is (UCD.East_Asian_Width_Classes.Sets (Property));   
+
+   function Get_Canonical_Combining_Class (UCD: Database;
+                                           C : Code_Point)
+                                           return Canonical_Combining_Class is
    begin
-      -- Ada.Wide_Wide_Characters.Handling should really provide these as sets.
-      -- It’s only 2 ** 24 code points, how long can it take?
-      for C in Code_Point'Range loop
-         if Ada.Wide_Wide_Characters.Handling.Is_Line_Terminator (C) then
-            Set := Set or To_Set (C);
+      raise Program_Error;
+      return 0;
+   end Get_Canonical_Combining_Class;
+
+   function Lowercase_Mapping (UCD : Database; C : Code_Point) return Wide_Wide_String is
+   (if UCD.Special_Lowercase_Mapping (C) /= null
+      then UCD.Special_Lowercase_Mapping (C).all
+      else (1 => UCD.Simple_Lowercase_Mapping (C)));
+   function Titlecase_Mapping (UCD : Database; C : Code_Point) return Wide_Wide_String is
+   (if UCD.Special_Titlecase_Mapping (C) /= null
+      then UCD.Special_Titlecase_Mapping (C).all
+      else (1 => UCD.Simple_Titlecase_Mapping (C)));
+   function Uppercase_Mapping (UCD : Database; C : Code_Point) return Wide_Wide_String is
+   (if UCD.Special_Uppercase_Mapping (C) /= null
+      then UCD.Special_Uppercase_Mapping (C).all
+      else (1 => UCD.Simple_Uppercase_Mapping (C)));
+
+   function Case_Folding (UCD : Database; C : Code_Point) return Wide_Wide_String is
+   (if UCD.Full_Case_Folding (C) = null then (1 => UCD.Simple_Case_Folding (C))
+      else UCD.Full_Case_Folding (C).all);
+
+   function Simple_Case_Folding (UCD : Database; C : Code_Point) return Code_Point is
+   (UCD.Simple_Case_Folding (C));
+   
+   function NFKC_Casefold (UCD: Database; C : Code_Point) return Wide_Wide_String is
+   (if UCD.Nontrivial_NFKC_Casefold (C) = null then (1 => C)
+      else UCD.Nontrivial_NFKC_Casefold (C).all);
+   
+   function Canonical_Decomposition (UCD : Database; C : Code_Point) return Wide_Wide_String is
+   begin
+      if UCD.Canonical_Mapping (C) = null then
+         return (1 => C);
+      else
+         declare
+            Mapping : Wide_Wide_String renames UCD.Canonical_Mapping (C).all;
+         begin
+            -- Stability policy:
+            -- Canonical mappings (Decomposition_Mapping property values) are
+            -- always limited either to a single value or to a pair. The second
+            -- character in the pair cannot itself have a canonical mapping.
+            case Mapping'Length is
+               when 1 =>
+                  return UCD.Canonical_Decomposition (Mapping (Mapping'First));
+               when 2 =>
+                  if UCD.Canonical_Mapping (Mapping (Mapping'Last)) /= null then
+                     raise Constraint_Error;
+                  end if;
+                  return UCD.Canonical_Decomposition (Mapping (Mapping'First)) &
+                  Mapping (Mapping'Last);
+               when others => raise Constraint_Error;
+            end case;
+         end;
+      end if;         
+   end Canonical_Decomposition;   
+
+   function Read_UCD (Directory : String) return Access_Database is
+   UCD : Access_Database := new Database;
+   procedure Process_Binary_Property_Field 
+   (  Scope  : Ada.Strings.Wide_Wide_Maps.Wide_Wide_Character_Range;
+      Number : Unicode.Character_Database.Parser.Field_Number;
+      Field  : Wide_Wide_String) is
+      Property : constant Binary_Property :=
+         (if Field = "STerm" then Sentence_Terminal else
+          Binary_Property'Wide_Wide_Value (Field));
+      Set      : Code_Point_Set := To_Set (Scope);
+      use type Unicode.Character_Database.Parser.Field_Number;
+   begin       
+      if Number /= 1 then
+         raise Constraint_Error with "Unexpected field " & Number'Image;
+      end if;
+      UCD.Binary_Properties (Property).Set :=
+      UCD.Binary_Properties (Property).Set or Set;
+      for C in Scope.Low .. Scope.High loop
+         UCD.Binary_Properties (Property).Values (C) := True;
+      end loop;
+   end Process_Binary_Property_Field;
+   
+   
+   function Parse_Bidi_Class (Value : Wide_Wide_String) return Bidi_Class is
+      type Bidi_Class_Alias is 
+      (L, R, AL,
+         EN, ES, ET, AN, CS, NSM, BN,
+         B, S, WS, ON,
+         LRE, LRO, RLE, RLO, PDF,
+         LRI, RLI, FSI, PDI);
+   begin
+      return Bidi_Class'Wide_Wide_Value (Value);
+   exception
+      when Constraint_Error =>
+         return Bidi_Class'Val (Bidi_Class_Alias'Pos 
+                              (Bidi_Class_Alias'Wide_Wide_Value (Value)));
+   end Parse_Bidi_Class;
+   
+   function Parse_General_Category (Value : Wide_Wide_String)
+                                    return General_Category is
+      type General_Category_Alias is 
+      (Lu, Ll, Lt, Lm, Lo,
+         Mn, Mc, Me,
+         Nd, Nl, No,
+         Pc, Pd, Ps, Pe, Pi, Pf, Po,
+         Sm, Sc, Sk, So,
+         Zs, Zl, Zp,
+         Cc, Cf, Cs, Co, Cn);
+   begin
+      return General_Category'Wide_Wide_Value (Value);
+   exception
+      when Constraint_Error =>
+         return General_Category'Val 
+         (General_Category_Alias'Pos 
+            (General_Category_Alias'Wide_Wide_Value (Value)));
+   end Parse_General_Category;
+   
+   function Parse_Line_Break (Value : Wide_Wide_String)
+                                    return Line_Break is
+   begin
+      for Candidate in Line_Break loop
+         if Line_Break_Aliases (Candidate).all = Value then
+            return Candidate;
          end if;
       end loop;
-      return Set;
-   end Get_Line_Terminator_Set;
-      
-   -- This should be computed from the line breaking property, but we need to
-   -- bootstrap ourselves somehow.  Use the Unicode support built into the
-   -- language.
-   Line_Terminator : constant Code_Point_Set := Get_Line_Terminator_Set; 
-     
-   function Parse_Code_Point (Hex : Wide_Wide_String) return Code_Point is
-     (Code_Point'Val (Natural'Wide_Wide_Value ("16#" & Hex & "#")));
+      raise Constraint_Error;
+   end Parse_Line_Break;
    
-   function Parse_Range (Field : Wide_Wide_String) return Code_Point_Range is
-      I : constant Natural := Index (Field, "..");
+   function Parse_East_Asian_Width (Value : Wide_Wide_String)
+                                    return East_Asian_Width is
+      type East_Asian_Width_Alias is (A,
+                                    F,
+                                    H,
+                                    N,
+                                    Na,
+                                    W);
    begin
-      if I = 0 then
-         return (Low  => Parse_Code_Point (Field),
-                 High => Parse_Code_Point (Field));
-      else
-         return (Low  => Parse_Code_Point (Field (Field'First .. I - 1)),
-                 High => Parse_Code_Point (Field (I + 2 .. Field'Last)));
-      end if;
-   end Parse_Range;
-   
-   procedure Process_File (File_Name : String) is
-      -- 4.2.12: The data files use UTF-8.
-      --
-      -- However, we can expect files to get reencoded, e.g., if they are piped
-      -- through a Windows terminal.  Look for a BOM, default to UTF-8.
-      Actual_Encoding : Ada.Strings.UTF_Encoding.Encoding_Scheme;
-      Uses_BOM        : Boolean;
-      Text            : constant Wide_Wide_String := Unicode.IO.Read_File 
-        (File_Name, Ada.Strings.UTF_Encoding.UTF_8, Actual_Encoding, Uses_BOM);
-      Next_Line_First : Positive := Text'First;
-      Line_First      : Positive;
-      Line_Last       : Natural;
-      
-      Unused          : Integer;
-      
-      -- 4.2.10: An @missing line starts with the comment character "#",
-      -- followed by a space, then the "@missing" keyword, followed by a colon,
-      -- another space, a code point range, and a semicolon.
-      Missing_Line_Prefix   : constant Wide_Wide_String := "# @missing: ";
-   begin
-      if Actual_Encoding /= Ada.Strings.UTF_Encoding.UTF_8 or Uses_BOM then
-         Ada.Text_IO.Put_Line ("Encoding changed: " & Actual_Encoding'Image &
-                               (if Uses_BOM then " with BOM"
-                                  else " without BOM"));
-      end if;
-      
-      Lines : for Current_Line_Number in Line_Number loop
-         exit when Next_Line_First > Text'Last;
-         Line_First := Next_Line_First;
-         -- 4.2.13: All data files in the UCD use LF line termination (not
-         -- CRLF line termination). When copied to different systems, these
-         -- line endings may be automatically changed to use the native line
-         -- termination conventions for that system. Make sure your editor
-         -- (or parser) can deal with the line termination style in the local
-         -- copy of the data files.
-         --
-         -- Here we deal with anything recognized by UAX #14; we ignore empty
-         -- lines, which means we don’t need to special-case CRLF.
-         Find_Token (Text,
-                     From  => Line_First,
-                     Test  => Outside, Set => Line_Terminator,
-                     First => Line_First,
-                     Last  => Line_Last);
-         if Line_Last = 0 then
-            Line_Last       := Text'Last;
-            Next_Line_First := Line_Last + 1;
-         else            Find_Token (Text,
-                                     From  => Line_Last,
-                                     Test  => Inside, Set => Line_Terminator,
-                                     First => Unused,
-                                     Last  => Next_Line_First);
-            Next_Line_First := Next_Line_First + 1;
-         end if;
-         if Next_Line_First > Text'Last and then
-           Text (Line_First .. Line_Last) /= "# EOF" then
-            -- Most of the files have EOF markers, though this is not specified
-            -- by UAX #44. Warn if we don’t see such a marker, in case someone
-            -- gets a truncated file.
-            Ada.Text_IO.Put_Line ("Warning: No EOF marker in " & File_Name);
-         end if;
-         
-         if (for some C of Text (Line_Last + 1 .. Next_Line_First - 1) =>
-               C /= Code_Point'Val (16#0A#)) then
-            Ada.Text_IO.Put ("Line terminators changed: Line " &
-                               Current_Line_Number'Image & ": ");
-            Ada.Wide_Wide_Text_IO.Put (Text (Line_First .. Line_Last));
-            for C of Text (Line_Last + 1 .. Next_Line_First - 1) loop
-               Ada.Text_IO.Put (C'Image);
-            end loop;
-            Ada.Text_IO.New_Line;
-         end if;
-
-         -- 4.2.10: In general, the code point range and semicolon-delimited
-         -- list follow the same syntactic conventions as the data file in
-         -- which the @missing line occurs, so that any parser which
-         -- interprets that data file can easily be adapted to also parse and
-         -- interpret an @missing line to pick up default property values for
-         -- code points.
-         if Text (Line_First .. Line_Last)'Length >=
-           Missing_Line_Prefix'Length and then
-           Text (Line_First .. Line_First + Missing_Line_Prefix'Length - 1) =
-           Missing_Line_Prefix then
-            Line_First := Line_First + Missing_Line_Prefix'Length;
-         end if;
-            
-         -- 4.2.4: U+0023 NUMBER SIGN ("#") is used to indicate comments: all
-         -- characters from the number sign to the end of the line are
-         -- considered part of the comment, and are disregarded when parsing
-         -- data.
-         Find_Comment : declare
-            Comment_First : Natural :=
-                              Index (Text (Line_First .. Line_Last),
-                                     To_Set ('#'),
-                                     From => Line_First);
-         begin
-            if Comment_First /= 0 then
-               Line_Last := Comment_First - 1;
-            end if;
-         end Find_Comment;
-
-         declare
-            Line             : Wide_Wide_String renames
-                                 Text (Line_First .. Line_Last);
-            Scope            : Code_Point_Range;
-            Next_Field_First : Positive := Line'First;
-            Field_First      : Positive;
-            Field_Last       : Natural;
-         begin
-            Fields : for Current_Field_Number in Field_Number loop
-               exit when Next_Field_First > Line'Last;
-               Field_First := Next_Field_First;
-               
-               -- 4.2.1: Each line of data consists of fields separated by
-               -- semicolons.
-               declare
-                  Separator : Natural := Index (Line, To_Set (';'),
-                                                From => Field_First);
-               begin
-                  if Separator = 0 then 
-                     Separator := Line'Last + 1;
-                  end if;
-                  Field_Last       := Separator - 1;
-                  Next_Field_First := Separator + 1;
-               end;
-                  
-               -- 4.2.1: Leading and trailing spaces within a field are not
-               -- significant.
-               Field_First := Index_Non_Blank (Line (Field_First .. Field_Last),
-                                               From => Field_First);
-               Field_Last  := Index_Non_Blank (Line (Field_First .. Field_Last),
-                                               Going => Backward,
-                                               From  => Field_Last);
-               declare
-                  Field : Wide_Wide_String renames
-                            Line (Field_First .. Field_Last);
-               begin
-                  -- The first field (0) of each line in the Unicode Character
-                  -- Database files represents a code point or range. The
-                  -- remaining fields (1 .. n) are properties associated with
-                  -- that code point.
-                  if Current_Field_Number = 0 then
-                     if Field = "" then
-                        if Next_Field_First <= Line'Last then
-                           raise Constraint_Error with
-                             "Blank field 0 on nontrivial line";
-                        end if;
-                     else
-                        Scope := Parse_Range (Field);
-                     end if;
-                  else
-                     Process_Field (Scope, Current_Field_Number, Field);
-                  end if;
-               exception
-                  when E : others =>
-                     Ada.Exceptions.Raise_Exception
-                       (Ada.Exceptions.Exception_Identity (E),
-                        "Field " & Current_Field_Number'Image & ": " & 
-                          Ada.Exceptions.Exception_Message (E));
-               end;
-            end loop Fields;
-         exception
-            when E : others =>
-               Ada.Exceptions.Raise_Exception
-                 (Ada.Exceptions.Exception_Identity (E),
-                  "Line " & Current_Line_Number'Image & ": " &
-                    Ada.Exceptions.Exception_Message (E));
-         end;
-      end loop Lines;
+      return East_Asian_Width'Wide_Wide_Value (Value);
    exception
-      when E : others =>
-         Ada.Exceptions.Raise_Exception
-           (Ada.Exceptions.Exception_Identity (E),
-            File_Name & ": " & Ada.Exceptions.Exception_Message (E));
-   end Process_File;
+      when Constraint_Error =>
+         return East_Asian_Width'Val 
+         (East_Asian_Width_Alias'Pos 
+            (East_Asian_Width_Alias'Wide_Wide_Value (Value)));
+   end Parse_East_Asian_Width;
+      
+   generic
+      type Property is (<>);
+      File_Name : String;
+      with function Parse_Property (Value : Wide_Wide_String) return Property;
+      with package Property_Data is new Enumeration_Property_Data (Property);
+   procedure Process_Enumeration_Property (Data : out Property_Data.Data);
+   procedure Process_Enumeration_Property (Data : out Property_Data.Data) is
+      procedure Process_Field
+        (Scope  : Ada.Strings.Wide_Wide_Maps.Wide_Wide_Character_Range;
+         Number : Unicode.Character_Database.Parser.Field_Number;
+         Field  : Wide_Wide_String)
+      is
+         New_Value : constant Property := Parse_Property (Field);
+         Set       : Code_Point_Set    := To_Set (Scope);
+         use type Unicode.Character_Database.Parser.Field_Number;
+      begin
+         if Number /= 1 then
+            raise Constraint_Error with "Unexpected field " & Number'Image;
+         end if;
+         for Value in Property loop
+            Data.Sets (Value) := Data.Sets (Value) - Set;
+         end loop;
+         Data.Sets (New_Value) := Data.Sets (New_Value) or Set;
+         for C in Scope.Low .. Scope.High loop
+            Data.Values (C) := New_Value;
+         end loop;
+      end Process_Field;
+      
+      procedure Process_File is
+      new Unicode.Character_Database.Parser.Process_File (Process_Field);
+   begin
+      Process_File (File_Name);
+   end Process_Enumeration_Property;
+
+   Extracted : constant String := Ada.Directories.Compose(Directory, "extracted");
    
+   procedure Process_Bidi_Classes is new Process_Enumeration_Property
+   (Bidi_Class,
+      Ada.Directories.Compose(Extracted, "DerivedBidiClass", "txt"),
+      Parse_Bidi_Class,
+      Bidi_Class_Data);
+   
+   procedure Process_General_Categories is new Process_Enumeration_Property
+   (General_Category,
+      Ada.Directories.Compose(Extracted, "DerivedGeneralCategory", "txt"),
+      Parse_General_Category,
+      General_Category_Data);
+   
+   procedure Process_Line_Breaking_Classes is new Process_Enumeration_Property
+   (Line_Break,
+      Ada.Directories.Compose(Directory, "LineBreak", "txt"),
+      Parse_Line_Break,
+      Line_Break_Data);
+   
+   procedure Process_East_Asian_Widths is new Process_Enumeration_Property
+   (East_Asian_Width,
+      Ada.Directories.Compose(Extracted, "DerivedEastAsianWidth", "txt"),
+      Parse_East_Asian_Width,
+      East_Asian_Width_Data);
+   
+   procedure Process_Binary_Property_File is
+   new Unicode.Character_Database.Parser.Process_File
+      (Process_Binary_Property_Field);
+
+   function Identity return Simple_Mapping is
+      Result : Simple_Mapping;
+   begin
+      for C in Code_Point loop
+         Result (C) := C;
+      end loop;
+      return Result;
+   end Identity;
+   
+   procedure Process_Simple_Case_Mapping_Field
+   (Scope  : Code_Point_Range;
+      Number : Unicode.Character_Database.Parser.Field_Number;
+      Field  : Wide_Wide_String) is
+      subtype Simple_Case_Mapping_Field is
+      Unicode.Character_Database.Parser.Field_Number range 12 .. 14;
+   begin
+      if Number in Simple_Case_Mapping_Field and then Field /= "" then
+         declare
+            Value : constant Code_Point :=
+            Parser.Parse_Code_Point (Field);
+         begin
+            for C in Scope.Low .. Scope.High loop
+               case Simple_Case_Mapping_Field'(Number) is
+                  when 12 => UCD.Simple_Uppercase_Mapping (C) := Value;
+                  when 13 => UCD.Simple_Lowercase_Mapping (C) := Value;
+                  when 14 => UCD.Simple_Titlecase_Mapping (C) := Value;
+               end case;   
+            end loop;
+         end;
+      end if;
+   end Process_Simple_Case_Mapping_Field;
+   
+   procedure Process_Simple_Case_Mappings is
+   new Unicode.Character_Database.Parser.Process_File
+      (Process_Simple_Case_Mapping_Field);
+      
+   procedure Process_Decomposition_Mapping_Field
+   (Scope  : Code_Point_Range;
+      Number : Unicode.Character_Database.Parser.Field_Number;
+      Field  : Wide_Wide_String) is
+      use type Unicode.Character_Database.Parser.Field_Number;
+   begin
+      if Number = 5 and then Field /= "" and then
+      not (for some C of Field => C = '<')  then
+         for C in Scope.Low .. Scope.High loop
+            UCD.Canonical_Mapping (C) :=
+            new Wide_Wide_String'
+               (Parser.Parse_Sequence (Field));
+         end loop;
+      end if;
+   end Process_Decomposition_Mapping_Field;
+   
+   procedure Process_Decomposition_Mappings is
+   new Unicode.Character_Database.Parser.Process_File
+      (Process_Decomposition_Mapping_Field);
+   
+   type Special_Casing is
+      record
+         Scope : Code_Point_Range;
+         Lower : Special_Mapping_Value;
+         Title : Special_Mapping_Value;
+         Upper : Special_Mapping_Value;
+      end record;
+   
+   Current_SC_Record : Special_Casing := (('Z', 'A'), null, null, null);
+   
+   procedure Process_Special_Casing_Field
+   (Scope  : Code_Point_Range;
+      Number : Unicode.Character_Database.Parser.Field_Number;
+      Field  : Wide_Wide_String) is
+   begin
+      if Scope /= Current_SC_Record.Scope then
+         Current_SC_Record := (Scope, null, null, null);
+      end if;
+      case Number is
+         when 1 .. 3 =>
+            declare
+               Value           : Wide_Wide_String :=
+                  (if Field = "<slc>" or Field = "<stc>" or Field = "<suc>" then
+                  "" else Parser.Parse_Sequence (Field));
+               Allocated_Value : Special_Mapping_Value :=
+               (if Value = "" then null
+                  else new Wide_Wide_String'(Value));
+            begin
+               case Number is
+                  when 1 => Current_SC_Record.Lower := Allocated_Value; 
+                  when 2 => Current_SC_Record.Title := Allocated_Value;
+                  when 3 => Current_SC_Record.Upper := Allocated_Value;
+                  when others => null;
+               end case;
+            end;
+         when 4 =>
+            if Field = "" then
+               for C in Scope.Low .. Scope.High loop
+                  UCD.Special_Lowercase_Mapping (C) := Current_SC_Record.Lower;
+                  UCD.Special_Titlecase_Mapping (C) := Current_SC_Record.Title;
+                  UCD.Special_Uppercase_Mapping (C) := Current_SC_Record.Upper;
+               end loop;
+            end if;
+         when 5 =>
+            -- There was a condition (field 4).  We only look at the default
+            -- case mappings, so we ignore this record.
+            if Field /= "" then
+               raise Constraint_Error;
+            end if;
+         when others => raise Constraint_Error;
+      end case;
+   end Process_Special_Casing_Field;
+   
+   procedure Process_Special_Casing is
+   new Parser.Process_File (Process_Special_Casing_Field);
+   
+   type Case_Folding_Status is (C, F, S, T);
+   function Common return Case_Folding_Status renames C;
+   function Full return Case_Folding_Status renames F;
+   function Simple return Case_Folding_Status renames S;
+   function Turkic return Case_Folding_Status renames T;
+   
+   type Case_Folding_Record is
+      record
+         Scope  : Code_Point_Range;
+         Status : Case_Folding_Status;
+      end record;
+   
+   Current_CF_Record : Case_Folding_Record := (('Z', 'A'), C);
+   
+   procedure Process_Case_Folding_Field
+   (Scope  : Code_Point_Range;
+      Number : Unicode.Character_Database.Parser.Field_Number;
+      Field  : Wide_Wide_String) is
+   begin
+      if Scope /= Current_CF_Record.Scope then
+         Current_CF_Record := (Scope, C);
+      end if;
+      case Number is
+         when 1 =>
+            Current_CF_Record.Status :=
+            Case_Folding_Status'Wide_Wide_Value (Field);
+         when 2 =>
+            if Field = "<code point>" then
+               -- Some versions of Unicode had an @missing line in CaseFolding.txt.
+               return;
+            end if;
+            for C in Scope.Low .. Scope.High loop
+               case Current_CF_Record.Status is
+                  when Common =>
+                     UCD.Simple_Case_Folding (C) := (Parser.Parse_Code_Point (Field));
+                     UCD.Full_Case_Folding (C) :=
+                     new Wide_Wide_String'
+                        (1 => Parser.Parse_Code_Point (Field));
+                  when Simple => UCD.Simple_Case_Folding (C) :=
+                     (Parser.Parse_Code_Point (Field));
+                  when Full =>
+                     UCD.Full_Case_Folding (C) :=
+                     new Wide_Wide_String'
+                        (Parser.Parse_Sequence (Field));
+                  when Turkic => null;
+               end case;
+            end loop;
+         when 3 =>
+            if Field /= "" then
+               raise Constraint_Error;
+            end if;
+         when others => raise Constraint_Error;
+      end case;
+   end Process_Case_Folding_Field;
+   
+   procedure Process_Case_Folding is
+   new Unicode.Character_Database.Parser.Process_File (Process_Case_Folding_Field); 
+
+   Is_NFKC_CF_Record : Boolean := False;
+   
+   procedure Process_Normalization_Field
+   (Scope  : Code_Point_Range;
+      Number : Unicode.Character_Database.Parser.Field_Number;
+      Field  : Wide_Wide_String) is
+   begin
+      case Number is
+         when 1 =>
+            Is_NFKC_CF_Record := Field = "NFKC_CF";
+         when 2 =>
+            if not Is_NFKC_CF_Record then
+               return;
+            end if;
+            declare 
+               Value : constant Special_Mapping_Value :=
+                  (if Field = "<code point>" then null
+                   else new Wide_Wide_String'(Parser.Parse_Sequence (Field)));
+            begin
+               for C in Scope.Low .. Scope.High loop
+                  UCD.Nontrivial_NFKC_Casefold (C) := Value;
+               end loop;
+            end;
+         when others => null;
+      end case;
+   end Process_Normalization_Field;
+   
+   procedure Process_Normalization_Props is
+   new Unicode.Character_Database.Parser.Process_File (Process_Normalization_Field); 
+
+   Emoji : constant String := Ada.Directories.Compose (Directory, "emoji");
+   UnicodeData : constant String := Ada.Directories.Compose (Directory, "UnicodeData", "txt");
+begin
+
+   Process_Simple_Case_Mappings (UnicodeData);
+   Process_Decomposition_Mappings (UnicodeData);
+   Process_Special_Casing (Ada.Directories.Compose (Directory, "SpecialCasing", "txt"));
+   Process_Case_Folding (Ada.Directories.Compose (Directory, "CaseFolding", "txt"));
+   Process_Normalization_Props (Ada.Directories.Compose (Directory, "DerivedNormalizationProps", "txt"));
+
+   Process_General_Categories (UCD.General_Categories);
+   Process_Bidi_Classes (UCD.Bidi_Classes);
+   Process_Line_Breaking_Classes (UCD.Line_Breaking_Classes);
+   Process_East_Asian_Widths (UCD.East_Asian_Width_Classes);
+
+   Process_Binary_Property_File (Ada.Directories.Compose (Directory, "DerivedCoreProperties", "txt"));
+   Process_Binary_Property_File (Ada.Directories.Compose (Directory, "PropList", "txt"));
+   Process_Binary_Property_File (Ada.Directories.Compose (Extracted, "DerivedBinaryProperties", "txt"));
+   --Process_Binary_Property_File (Ada.Directories.Compose (Emoji, "emoji-data", "txt"));
+   return UCD;
+end Read_UCD;
+
+All_Versions : array (Unicode.Version) of Access_Database := (others => null);
+
+function Version (V : Unicode.Version) return Access_Database is
+   Version_Image : constant String := V'Image;
+   I : constant Positive := Version_Image'First + String'("Version_")'Length;
+   Directory : constant String := [for C of Version_Image (I .. Version_Image'Last) => (if C = '_' then '.' else C)];
+begin
+   if All_Versions (V) = null then
+      All_Versions (V) := Read_UCD (Directory);
+   end if;
+   return All_Versions (V);
+end Version;
+
+function Latest return Access_Database is (Version (Unicode.Version'Last));
+
 end Unicode.Character_Database;

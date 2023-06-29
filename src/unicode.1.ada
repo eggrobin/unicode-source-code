@@ -7,8 +7,8 @@ package Unicode is
      Wide_Wide_Character'Val (0) .. Wide_Wide_Character'Val (16#10FFFF#);
    -- D76.
    subtype Scalar_Value is Code_Point with
-     Static_Predicate => Scalar_Value not in
-       Code_Point'Val (16#D800#) .. Code_Point'Val (16#DBFF#);
+      Static_Predicate => Scalar_Value not in
+         Code_Point'Val (16#D800#) .. Code_Point'Val (16#DFFF#);
 
    subtype Code_Point_Set is Ada.Strings.Wide_Wide_Maps.Wide_Wide_Character_Set;
    use all type Code_Point_Set;

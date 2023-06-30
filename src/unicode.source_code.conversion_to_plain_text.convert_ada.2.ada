@@ -11,21 +11,16 @@ use Ada.Strings;
 use Ada.Strings.Wide_Wide_Fixed;
 use Ada.Strings.Wide_Wide_Unbounded;
 
-with Unicode;
 with Unicode.IO;
 with Unicode.Character_Database;
 with Unicode.Properties;
-with Unicode.Source_Code.Conversion_To_Plain_Text;
+with Unicode.Source_Code;
 
-use Unicode;
 
-use all type Unicode.Code_Point_Set;
 use all type Unicode.Properties.Binary_Property;
 use all type Unicode.Properties.General_Category;
-use all type Unicode.Source_Code.Atom_Kind;
-use all type Unicode.Source_Code.Conversion_To_Plain_Text.Source_Code_Converter;
 
-procedure Convert_To_Plain_Text is
+procedure Unicode.Source_Code.Conversion_To_Plain_Text.Convert_Ada is
 
    package UCD renames Unicode.Character_Database;
 
@@ -53,7 +48,7 @@ procedure Convert_To_Plain_Text is
    type Simple_Atom_Definition is
       record
          Set  : Code_Point_Set;
-         Kind : Unicode.Source_Code.Atom_Kind;
+         Kind : Atom_Kind;
       end record;
 
    Simple_Atoms           : constant array (Positive range <>) of
@@ -214,4 +209,4 @@ begin
       Unicode.IO.Write_File (Plain_Text, "src/test.fixed.2.ada",
                              Actual_Encoding, Uses_BOM);
    end;
-end Convert_To_Plain_Text;
+end Unicode.Source_Code.Conversion_To_Plain_Text.Convert_Ada;

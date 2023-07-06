@@ -22,8 +22,8 @@ even
 longer
 string"; // 37 code points long.
 
-    //⁨ تعليق طويل جدا. جدا. 1+1=2 This is still a comment.
-    //⁨ تعليق طويل جدا. جدا.⁩‎  1+1=2 This is still a comment.
+    //⁨ تعليق طويل جدا. 1+1=2 This is still a comment.
+    //⁨ تعليق طويل جدا.⁩‎  1+1=2 This is still a comment.
     println!("‫YouTube تابعة لشركة Google‬"‎ /*123*/);
     println!("⁨‫YouTube تابعة لشركة Google⁩"‎);
     a = /*⁨א⁩‎*/ (1 - 2).into();

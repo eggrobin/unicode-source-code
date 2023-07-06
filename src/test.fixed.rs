@@ -3,7 +3,7 @@ let x = /*⁨ تعليق…
 ⁨ جدا. ⁩‎*/ 123;
 
 fn main() {
-    let spoof = format("{}{}", "0".repeat(7), (1));
+    let spoof = format("{}{}‏"‎, "0".repeat(7), (1));
     type א‎ = i32;
     let mut a: Option<א‎> = 1.into();
     //⁨متغیر [`a`] خالی نیست.

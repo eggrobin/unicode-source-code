@@ -140,7 +140,6 @@ package body Unicode.Source_Code.Conversion_To_Plain_Text is
            UCD.Latest.Get_Bidi_Class (Lookahead.Next) /= B then
             if Unmatched_Embeddings + Unmatched_Isolates > 0 then
                if Properties.Kind = Comment_Content then
-                  Ada.Wide_Wide_Text_IO.Put_Line (U_Notation (Lookahead.Next));
                   Append (Converter.Plain_Text,
                           Unmatched_Isolates * PDI & Unmatched_Embeddings * PDF);
                   Converter.Needs_LRM := True;

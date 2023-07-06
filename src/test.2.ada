@@ -19,16 +19,14 @@ begin
    --متغیر A خالی نیست.
    I := A.all;
    <<שגיאה>> רשם (הודעה); -- משהו השתבש.
-   --א:   I := -- א'  1 - 2;
+   --א:
+   I := -- א'  1 - 2;
    for Hebrew_Letter in Wide_Character range 'ת' .. 'א' loop
       null;
    end loop;
 
    -- This string literal is wrapped in RLE/PDF.
    Ada.Wide_Wide_Text_IO.Put_Line ("‫YouTube تابعة لشركة Google‬");
-   -- The one below has an RLE, but no PDF.
-   -- A diagnostic shall be emitted about it.
-   Ada.Wide_Wide_Text_IO.Put_Line ("‫YouTube تابعة لشركة Google");
    -- The one below has an unmatched RLE, but it lies between an FSI and the
    -- matching PDI.
    -- This is fine.

@@ -88,6 +88,7 @@ begin
          Remaining_Text : Wide_Wide_String renames Text (Position .. Text'Last);
       begin
          case Text (Position) is
+            -- TODO(egg): This does not handle raw strings.
             when '"' =>
                Append_Atom (Converter, """",
                             Lookahead (Position),
@@ -158,22 +159,24 @@ begin
                                (Other,
                                 Allows_LRM_Before => True));
                   Position := Position + 2;
-                  declare
-                     End_Of_Line : constant Natural :=
-                       Index (Text, From => Position,
-                              Test       => Inside,
-                              Set        => Line_Terminators);
-                     Comment_Last : constant Positive :=
-                       (if End_Of_Line = 0 then Text'Last
-                        else End_Of_Line - 1);
-                  begin
-                     Append_Atom (Converter, Text (Position .. Comment_Last),
-                                  Lookahead (Comment_Last),
-                                  (Comment_Content,
-                                   Allows_LRM_Before => True));
-                     Position := Comment_Last + 1;
-                  end;
+                  for I in Positive range Position .. Text'Last + 1 loop
+                     if Is_Line_Last (I) then
+                        Append_Atom (Converter, Text (Position .. I),
+                                    Lookahead (I),
+                                    (Comment_Content,
+                                    Allows_LRM_Before => False));
+                        Position := I + 1;
+                     elsif Is_In (Text (I), Line_Terminators) and then not Is_In (Text (I + 1), Line_Terminators) then
+                        Append_Atom (Converter, Text (Position .. I),
+                                    Lookahead (I),
+                                    (Line_Termination,
+                                    Allows_LRM_Before => False));
+                        Position := I + 1;
+                        exit when Text(I) = Wide_Wide_Character'Val(16#0A#);
+                     end if;
+                  end loop;
                elsif Remaining_Text'Length >= 2 and then
+                 -- TODO(egg): This does not handle nested block comments.
                  Text (Position + 1) = '*' then
                   Append_Atom (Converter, "/*",
                                Lookahead (Position + 1),

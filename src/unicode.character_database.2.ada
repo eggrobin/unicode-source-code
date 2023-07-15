@@ -25,6 +25,9 @@ package body Unicode.Character_Database is
    function Set_Of (UCD: Database; Property : Script) return Code_Point_Set
    is (UCD.Scripts.Sets (Property));
       
+   function Set_Of (UCD: Database; Property : Decomposition_Type) return Code_Point_Set
+   is (UCD.Decomposition_Types.Sets (Property));   
+      
    function Set_Of (UCD: Database; Property : East_Asian_Width) return Code_Point_Set
    is (UCD.East_Asian_Width_Classes.Sets (Property));   
 
@@ -242,6 +245,12 @@ package body Unicode.Character_Database is
       Ada.Directories.Compose(Directory, "Scripts", "txt"),
       Script'Wide_Wide_Value,
       Script_Data);
+   
+   procedure Process_Decomposition_Types is new Process_Enumeration_Property
+   (Decomposition_Type,
+      Ada.Directories.Compose(Extracted, "DerivedDecompositionType", "txt"),
+      Decomposition_Type'Wide_Wide_Value,
+      Decomposition_Type_Data);
    
    procedure Process_East_Asian_Widths is new Process_Enumeration_Property
    (East_Asian_Width,
@@ -467,6 +476,7 @@ begin
    Process_Bidi_Classes (UCD.Bidi_Classes);
    Process_Line_Breaking_Classes (UCD.Line_Breaking_Classes);
    Process_Scripts (UCD.Scripts);
+   Process_Decomposition_Types (UCD.Decomposition_Types);
    Process_East_Asian_Widths (UCD.East_Asian_Width_Classes);
 
    Process_Binary_Property_File (Ada.Directories.Compose (Directory, "DerivedCoreProperties", "txt"));

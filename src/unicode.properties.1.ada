@@ -464,5 +464,26 @@ package Unicode.Properties is
    
    type Canonical_Combining_Class is range 0 .. 254;
    function Not_Reordered return Canonical_Combining_Class is (0);
+
+   type Decomposition_Type is
+      (Canonical,
+        Compat   ,
+        Circle   ,
+        Final    ,
+        Font      ,
+        Fraction ,
+        Initial   ,
+        Isolated ,
+        Medial   ,
+        Narrow   ,
+        Nobreak ,
+        None      ,
+        Small    ,
+        Square   ,
+        Sub      ,
+        Super    ,
+        Vertical  ,
+        Wide      
+        );
    
 end Unicode.Properties;

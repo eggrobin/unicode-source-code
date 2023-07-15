@@ -32,11 +32,7 @@ procedure Properties_Test is
                          := [for I in 1 .. N =>
                              (Unicode.Properties.Script'Val(I),
                              Size (UCD.Latest.Set_Of(Unicode.Properties.Script'Val(I)) and
-                                   (UCD.Latest.Set_Of(Uppercase_Letter) or
-                                    UCD.Latest.Set_Of(Lowercase_Letter) or
-                                    UCD.Latest.Set_Of(Titlecase_Letter) or
-                                    UCD.Latest.Set_Of(Modifier_Letter) or
-                                    UCD.Latest.Set_Of(Other_Letter))))];
+                                   UCD.Latest.Set_Of(Unicode.Properties.None)))];
    function "<" (Left, Right : Line)
       return Boolean is (Left.Code_Points < Right.Code_Points);
    procedure Sort is new Ada.Containers.Generic_Array_Sort
@@ -44,7 +40,7 @@ procedure Properties_Test is
 begin
    Sort (Code_Points_By_Script);
    for L of Code_Points_By_Script loop
-      Ada.Text_IO.Put (Positive'Image (L.Code_Points) & ' ' & Unicode.Properties.Script'Image (L.Script));
-      Ada.Text_IO.New_Line;
+      Ada.Integer_Text_IO.Put(L.Code_Points, Width => 6);
+      Ada.Text_IO.Put_Line (' ' & Unicode.Properties.Script'Image (L.Script));
    end loop;
 end Properties_Test;

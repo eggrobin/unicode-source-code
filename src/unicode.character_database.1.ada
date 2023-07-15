@@ -21,6 +21,8 @@ package Unicode.Character_Database is
    function Set_Of (UCD: Database; Property : Line_Break) return Code_Point_Set;
    
    function Set_Of (UCD: Database; Property : Script) return Code_Point_Set;
+
+   function Set_Of (UCD: Database; Property : Decomposition_Type) return Code_Point_Set;   
    
    function Set_Of (UCD: Database; Property : East_Asian_Width) return Code_Point_Set;
       
@@ -54,6 +56,7 @@ private
    package Bidi_Class_Data is new Enumeration_Property_Data (Bidi_Class);
    package Line_Break_Data is new Enumeration_Property_Data (Line_Break);
    package Script_Data is new Enumeration_Property_Data (Script);
+   package Decomposition_Type_Data is new Enumeration_Property_Data (Decomposition_Type);
    package East_Asian_Width_Data is new Enumeration_Property_Data (East_Asian_Width);
 
    type Binary_Property_Values is array (Code_Point) of Boolean;
@@ -79,6 +82,7 @@ private
          Bidi_Classes          : Bidi_Class_Data.Data;
          Line_Breaking_Classes : Line_Break_Data.Data;
          Scripts               : Script_Data.Data;
+         Decomposition_Types   : Decomposition_Type_Data.Data;
          East_Asian_Width_Classes : East_Asian_Width_Data.Data;
          Simple_Lowercase_Mapping : Simple_Mapping := Identity;
          Simple_Titlecase_Mapping : Simple_Mapping := Identity;

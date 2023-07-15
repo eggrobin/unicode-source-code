@@ -2,7 +2,7 @@ project Unicode_Source_Code is
 
    for Source_Dirs use ("src");
    for Object_Dir use "obj";
-   for Main use ("unicode.source_code.conversion_to_plain_text.convert_ada.2.ada");
+   for Main use ("properties_test.2.ada");
 
    package Naming is
       for Spec_Suffix ("ada") use ".1.ada";

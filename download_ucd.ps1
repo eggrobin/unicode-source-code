@@ -32,7 +32,8 @@ foreach ($version in @("4.1.0",
               "PropList",
               "extracted/DerivedBinaryProperties",
               "emoji/emoji-data",
-              "DerivedNormalizationProps")) {
+              "DerivedNormalizationProps",
+              "Scripts")) {
     Invoke-WebRequest "https://www.unicode.org/Public/$version/ucd/$f.txt" -OutFile "$version/$f.txt"
   }
 }

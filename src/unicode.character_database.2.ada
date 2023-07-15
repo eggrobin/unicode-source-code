@@ -22,6 +22,9 @@ package body Unicode.Character_Database is
    function Set_Of (UCD: Database; Property : Line_Break) return Code_Point_Set
    is (UCD.Line_Breaking_Classes.Sets (Property));
       
+   function Set_Of (UCD: Database; Property : Script) return Code_Point_Set
+   is (UCD.Scripts.Sets (Property));
+      
    function Set_Of (UCD: Database; Property : East_Asian_Width) return Code_Point_Set
    is (UCD.East_Asian_Width_Classes.Sets (Property));   
 
@@ -152,6 +155,17 @@ package body Unicode.Character_Database is
       raise Constraint_Error;
    end Parse_Line_Break;
    
+   function Parse_Script (Value : Wide_Wide_String)
+                                    return Script is
+   begin
+      for Candidate in Script loop
+         if Script_Aliases (Candidate).all = Value then
+            return Candidate;
+         end if;
+      end loop;
+      raise Constraint_Error;
+   end Parse_Script;
+   
    function Parse_East_Asian_Width (Value : Wide_Wide_String)
                                     return East_Asian_Width is
       type East_Asian_Width_Alias is (A,
@@ -222,6 +236,12 @@ package body Unicode.Character_Database is
       Ada.Directories.Compose(Directory, "LineBreak", "txt"),
       Parse_Line_Break,
       Line_Break_Data);
+   
+   procedure Process_Scripts is new Process_Enumeration_Property
+   (Script,
+      Ada.Directories.Compose(Directory, "Scripts", "txt"),
+      Script'Wide_Wide_Value,
+      Script_Data);
    
    procedure Process_East_Asian_Widths is new Process_Enumeration_Property
    (East_Asian_Width,
@@ -446,6 +466,7 @@ begin
    Process_General_Categories (UCD.General_Categories);
    Process_Bidi_Classes (UCD.Bidi_Classes);
    Process_Line_Breaking_Classes (UCD.Line_Breaking_Classes);
+   Process_Scripts (UCD.Scripts);
    Process_East_Asian_Widths (UCD.East_Asian_Width_Classes);
 
    Process_Binary_Property_File (Ada.Directories.Compose (Directory, "DerivedCoreProperties", "txt"));

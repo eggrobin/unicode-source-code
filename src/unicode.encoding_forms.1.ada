@@ -36,8 +36,8 @@ end UTF_16;
 generic
    S : Wide_String;
 package UTF_16_Wide_Strings is
-   subtype Index is Positive range S'Range;
-   function Has_Element (Position : Index) return Boolean is (Position in Index);
+   subtype Index is Positive range S'First .. S'Last + 1;
+   function Has_Element (Position : Index) return Boolean is (Position in S'Range);
    function Get_Code_Unit (Position : Index) return Wide_Character is (S (Position));
    package S_Iterators is new Ada.Iterator_Interfaces (Index, Has_Element);
    type S_Iterator is new S_Iterators.Forward_Iterator with null record;

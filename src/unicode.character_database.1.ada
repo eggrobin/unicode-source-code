@@ -57,6 +57,7 @@ private
    package Line_Break_Data is new Enumeration_Property_Data (Line_Break);
    package East_Asian_Width_Data is new Enumeration_Property_Data (East_Asian_Width);
    package Quick_Check_Data is new Enumeration_Property_Data (Quick_Check_Result);
+   package Canonical_Combining_Class_Data is new Enumeration_Property_Data (Canonical_Combining_Class);
    type Normalization_Quick_Check_Data is array (Normalization_Form) of Quick_Check_Data.Data;
 
    type Binary_Property_Values is array (Code_Point) of Boolean;
@@ -83,6 +84,7 @@ private
          Line_Breaking_Classes : Line_Break_Data.Data;
          East_Asian_Width_Classes : East_Asian_Width_Data.Data;
          Normalization_Quick_Check : Normalization_Quick_Check_Data;
+         Canonical_Combining_Classes : Canonical_Combining_Class_Data.Data;
          Simple_Lowercase_Mapping : Simple_Mapping := Identity;
          Simple_Titlecase_Mapping : Simple_Mapping := Identity;
          Simple_Uppercase_Mapping : Simple_Mapping := Identity;

@@ -29,8 +29,7 @@ package body Unicode.Character_Database is
                                            C : Code_Point)
                                            return Canonical_Combining_Class is
    begin
-      raise Program_Error;
-      return 0;
+      return UCD.Canonical_Combining_Classes.Values (C);
    end Get_Canonical_Combining_Class;
 
    function Normalization_Quick_Check (UCD  : Database;
@@ -187,6 +186,16 @@ package body Unicode.Character_Database is
          (Quick_Check_Result_Alias'Pos 
             (Quick_Check_Result_Alias'Wide_Wide_Value (Value)));
    end Parse_Quick_Check_Result;
+
+   function Parse_Canonical_Combining_Class (Value : Wide_Wide_String)
+      return Canonical_Combining_Class is
+   begin
+      if Value = "Not_Reordered" then
+         return 0;
+      else
+         return Canonical_Combining_Class'Wide_Wide_Value (Value);
+      end if;
+   end;
       
    generic
       type Property is (<>);
@@ -241,6 +250,12 @@ package body Unicode.Character_Database is
       Ada.Directories.Compose(Directory, "LineBreak", "txt"),
       Parse_Line_Break,
       Line_Break_Data);
+   
+   procedure Process_Canonical_Combining_Classes is new Process_Enumeration_Property
+   (Canonical_Combining_Class,
+      Ada.Directories.Compose(Extracted, "DerivedCombiningClass", "txt"),
+      Parse_Canonical_Combining_Class,
+      Canonical_Combining_Class_Data);
    
    procedure Process_East_Asian_Widths is new Process_Enumeration_Property
    (East_Asian_Width,
@@ -496,6 +511,8 @@ begin
    Process_Bidi_Classes (UCD.Bidi_Classes);
    Process_Line_Breaking_Classes (UCD.Line_Breaking_Classes);
    Process_East_Asian_Widths (UCD.East_Asian_Width_Classes);
+
+   Process_Canonical_Combining_Classes (UCD.Canonical_Combining_Classes);
 
    Process_Binary_Property_File (Ada.Directories.Compose (Directory, "DerivedCoreProperties", "txt"));
    Process_Binary_Property_File (Ada.Directories.Compose (Directory, "PropList", "txt"));

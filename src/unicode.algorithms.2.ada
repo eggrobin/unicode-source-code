@@ -28,12 +28,11 @@ begin
          end if;
          Last_Canonical_Class := Canonical_Class;
          case UCD.Normalization_Quick_Check (Form, CP) is
-         when No    => return No;
-         when Maybe => Result := Maybe;
-         when Yes   => null;
+            when No    => return No;
+            when Maybe => Result := Maybe;
+            when Yes   => null;
          end case;
-      end;      
-      Result := Maybe;
+      end;
       C := Source.Next (C);
    end loop;
    return Result;

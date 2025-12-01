@@ -1,4 +1,5 @@
 with Unicode.Encoding_Forms;
+with Ada.Text_IO;
 package body Unicode.Encoding_Forms is
 
 package body UTF_16 is
@@ -6,14 +7,14 @@ package body UTF_16 is
    subtype High_Surrogate is Surrogate range Code_Unit'Val(16#D800#) .. Code_Unit'Val(16#DBFF#);
    subtype Low_Surrogate is Surrogate range Code_Unit'Val(16#DC00#) .. Code_Unit'Val(16#DFFF#);
 
-
    function Get_Supplementary (High : High_Surrogate;
                                Low  : Low_Surrogate) return Unicode.Scalar_Value is
    begin
       return Unicode.Scalar_Value'Val
          (High_Surrogate'Pos (High) * 2 ** 10 + Low_Surrogate'Pos (Low)
-          - (High_Surrogate'Pos (High_Surrogate'First) / 2 ** 10 +
-             Low_Surrogate'Pos (Low_Surrogate'First)));
+          - (High_Surrogate'Pos (High_Surrogate'First) * 2 ** 10 +
+             Low_Surrogate'Pos (Low_Surrogate'First)
+             - 16#1_0000#));
    end Get_Supplementary;
 
    function Has_Element (Position : Code_Point_Cursor) return Boolean is
@@ -31,7 +32,7 @@ package body UTF_16 is
       declare 
          C : Code_Unit := Get_Code_Unit (First_Code_Unit);
       begin
-         if C in Surrogate then
+         if C not in Surrogate then
             return (First_Code_Unit, First_Code_Unit, Unicode.Scalar_Value'Val (Code_Unit'Pos (C)));
          else
             if C in High_Surrogate then

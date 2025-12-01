@@ -1,5 +1,6 @@
 with Ada.Exceptions;
 with Ada.Text_IO;
+with Unicode;
 
 procedure Properties_Test is
 
@@ -25,6 +26,16 @@ procedure Properties_Test is
    Egg      : UTF_16_String := Wide_Character'Val(16#D808#) & Wide_Character'Val(16#DE6D#);
    Eggs     : UTF_16_String := Egg & Egg;
    Wide_Wide_Egg : UTF_32_String := "𒉭𒉭";
+
+   function Code_Point_Count (S : Unicode.Code_Point_Sequence'Class) return Natural is
+      Count : Natural := 0;
+   begin
+      for CP of S loop
+         Count := Count + 1;
+      end loop;
+      return Count;
+   end Code_Point_Count;
+
 begin
    Ada.Text_IO.Put_Line (Boolean'Image (Egg in UTF_16_String));
    Ada.Text_IO.Put_Line (Boolean'Image (Eggs in UTF_16_String));

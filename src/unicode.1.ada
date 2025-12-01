@@ -1,3 +1,4 @@
+with Ada.Iterator_Interfaces;
 with Ada.Strings.Wide_Wide_Maps;
 
 package Unicode is
@@ -19,6 +20,21 @@ package Unicode is
    subtype Code_Point_Range is
      Ada.Strings.Wide_Wide_Maps.Wide_Wide_Character_Range;
    use all type Code_Point_Range;
+
+   type Code_Point_Sequence is interface
+       with Constant_Indexing => Get_Scalar_Value,
+            Default_Iterator => By_Code_Point,
+            Iterator_Element => Scalar_Value;
+   type Code_Point_Cursor is null record;
+   type Access_Code_Point_Cursor is not null access Code_Point_Cursor;
+   function Get_Scalar_Value (S      : Code_Point_Sequence'Class;
+                              Cursor : Access_Code_Point_Cursor)
+      return Scalar_Value;
+   function Has_Element (C : Access_Code_Point_Cursor) return Boolean;
+   package Code_Point_Iterators is
+      new Ada.Iterator_Interfaces (Access_Code_Point_Cursor, Has_Element);
+   function By_Code_Point (S : Code_Point_Sequence)
+      return Code_Point_Iterators.Forward_Iterator is abstract;
 
    type Range_Style is (Two_Dots, En_Dash);
 

@@ -102,5 +102,15 @@ package body Unicode is
    function U_Notation (R     : Code_Point_Range;
                         Style : Range_Style := En_Dash) return Wide_Wide_String
                         renames Wide_Wide_Implementations.U_Notation;
+
+function Get_Scalar_Value (S      : Code_Point_Sequence'Class;
+                           Cursor : Access_Code_Point_Cursor)
+   return Scalar_Value is
+begin
+   raise Constraint_Error;
+   return Scalar_Value'Val (16#FFFD#);
+end Get_Scalar_Value;
+
+function Has_Element (C : Access_Code_Point_Cursor) return Boolean is (False);
    
 end Unicode;

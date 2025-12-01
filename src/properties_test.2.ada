@@ -1,6 +1,8 @@
 with Ada.Exceptions;
 with Ada.Text_IO;
 
+with Unicode.Algorithms;
+
 procedure Properties_Test is
 
    subtype High_Surrogate is Wide_Character

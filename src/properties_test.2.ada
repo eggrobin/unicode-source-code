@@ -2,39 +2,32 @@ with Ada.Exceptions;
 with Ada.Text_IO;
 
 with Unicode.Algorithms;
+with Unicode.Properties;
+With Unicode.Encoding_Forms;
 
 procedure Properties_Test is
-
-   subtype High_Surrogate is Wide_Character
-      range Wide_Character'Val (16#D800#) .. Wide_Character'Val (16#DB7F#);
-   subtype Low_Surrogate is Wide_Character
-      range Wide_Character'Val (16#DC00#) .. Wide_Character'Val (16#DFFF#);
-   subtype UTF_16_String is Wide_String
-      with Dynamic_Predicate =>
-      (for all I in UTF_16_String'Range =>
-         (if UTF_16_String (I) in High_Surrogate then
-            I + 1 in UTF_16_String'Range and then
-               UTF_16_String (I + 1) in Low_Surrogate));
-   subtype Code_Point is Wide_Wide_Character range
-      Wide_Wide_Character'Val (0) .. Wide_Wide_Character'Val (16#10FFFF#);
-   subtype Scalar_Value is Code_Point with
-      Static_Predicate => Scalar_Value not in
-         Code_Point'Val (16#D800#) .. Code_Point'Val (16#DFFF#);
-   subtype UTF_32_String is Wide_Wide_String
-      with Dynamic_Predicate => (for all Code_Unit of UTF_32_String => Code_Unit in Scalar_Value);
-
-   E_Acute  : String      := Character'Val(16#C3#) & Character'Val(16#A9#);
-   Egg      : UTF_16_String := Wide_Character'Val(16#D808#) & Wide_Character'Val(16#DE6D#);
-   Eggs     : UTF_16_String := Egg & Egg;
-   Wide_Wide_Egg : UTF_32_String := "𒉭𒉭";
+   Test_String : Wide_String :=
+      (Wide_Character'Val(16#D808#), Wide_Character'Val(16#DE6D#),
+       'e',
+       Wide_Character'Val(16#0301#));
 begin
-   Ada.Text_IO.Put_Line (Boolean'Image (Egg in UTF_16_String));
-   Ada.Text_IO.Put_Line (Boolean'Image (Eggs in UTF_16_String));
-   Ada.Text_IO.Put_Line (Boolean'Image (Wide_Wide_Egg in UTF_32_String));
-   Egg := Eggs (1 .. 2);
-   Ada.Text_IO.Put_Line (Boolean'Image (Egg in UTF_16_String));
-   Egg := Eggs (2 .. 3);
-   Ada.Text_IO.Put_Line (Boolean'Image (Egg in UTF_16_String));
-   Wide_Wide_Egg (1) := Wide_Wide_Character'Val (Wide_Character'Pos (Egg (1)));
-   Ada.Text_IO.Put_Line (Boolean'Image (Wide_Wide_Egg in UTF_32_String));
+   for I in Test_String'Range loop
+      for J in I .. Test_String'Last loop
+         declare
+            Test_Substring : Wide_String renames Test_String (I .. J);
+            package UTF_16_Substring is new Unicode.Encoding_Forms.UTF_16_Wide_Strings (Test_Substring);
+            use UTF_16_Substring.UTF_16_S_Iterators;
+            package Substring_Algorithms is new Unicode.Algorithms
+               (Code_Point_Cursor, Has_Element, Get_Code_Point, Code_Point_Iterators, Code_Point_Iterator);
+            Code_Points : Code_Point_Iterator;
+         begin
+            for Form in Unicode.Normalization_Form loop
+               Ada.Text_IO.Put_Line (
+                  "NF" & Unicode.Normalization_Form'Image (Form) & ": " &
+                  Unicode.Properties.Quick_Check_Result'Image (
+                     Substring_Algorithms.Is_Normalized (Form, Code_Points)));
+            end loop;
+         end;
+      end loop;
+   end loop;   
 end Properties_Test;

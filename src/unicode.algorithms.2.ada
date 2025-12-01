@@ -18,7 +18,7 @@ return Unicode.Properties.Quick_Check_Result is
 begin
    while Has_Element (C) loop
       declare 
-         CP : constant Unicode.Scalar_Value := Scalar_Value (C);
+         CP : constant Unicode.Scalar_Value := Get_Code_Point (C);
          Canonical_Class : Unicode.Properties.Canonical_Combining_Class
                            := UCD.Get_Canonical_Combining_Class (CP);
       begin

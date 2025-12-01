@@ -6,4 +6,4 @@ authors = ["Your Name"]
 maintainers = ["Your Name <example@example.com>"]
 maintainers-logins = ["github-username"]
 
-executables = ["unicode_source_code"]
+executables = ["properties_test"]

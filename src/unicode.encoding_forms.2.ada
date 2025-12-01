@@ -1,5 +1,5 @@
 with Unicode.Encoding_Forms;
-with Ada.Text_IO;
+
 package body Unicode.Encoding_Forms is
 
 package body UTF_16 is

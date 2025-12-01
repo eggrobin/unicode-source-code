@@ -55,5 +55,7 @@ package Unicode is
                     Version_12_1_0,
                     Version_13_0_0,
                     Version_14_0_0,
-                    Version_15_0_0);              
+                    Version_15_0_0);
+
+   type Normalization_Form is (D, C, KD, KC);
 end Unicode;

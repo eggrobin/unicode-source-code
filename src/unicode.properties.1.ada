@@ -269,5 +269,7 @@ package Unicode.Properties is
    
    type Canonical_Combining_Class is range 0 .. 254;
    function Not_Reordered return Canonical_Combining_Class is (0);
+
+   type Quick_Check_Result is (No, Yes, Maybe);
    
 end Unicode.Properties;

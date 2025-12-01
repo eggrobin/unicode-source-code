@@ -33,6 +33,13 @@ package body Unicode.Character_Database is
       return 0;
    end Get_Canonical_Combining_Class;
 
+   function Normalization_Quick_Check (UCD  : Database;
+                                       Form : Normalization_Form;
+                                       C    : Code_Point) return Quick_Check_Result is
+   begin
+      return UCD.Normalization_Quick_Check (Form).Values (C);
+   end Normalization_Quick_Check;
+
    function Lowercase_Mapping (UCD : Database; C : Code_Point) return Wide_Wide_String is
    (if UCD.Special_Lowercase_Mapping (C) /= null
       then UCD.Special_Lowercase_Mapping (C).all
@@ -168,6 +175,18 @@ package body Unicode.Character_Database is
          (East_Asian_Width_Alias'Pos 
             (East_Asian_Width_Alias'Wide_Wide_Value (Value)));
    end Parse_East_Asian_Width;
+   
+   function Parse_Quick_Check_Result (Value : Wide_Wide_String)
+                                    return Quick_Check_Result is
+      type Quick_Check_Result_Alias is (N, Y, M);
+   begin
+      return Quick_Check_Result'Wide_Wide_Value (Value);
+   exception
+      when Constraint_Error =>
+         return Quick_Check_Result'Val 
+         (Quick_Check_Result_Alias'Pos 
+            (Quick_Check_Result_Alias'Wide_Wide_Value (Value)));
+   end Parse_Quick_Check_Result;
       
    generic
       type Property is (<>);
@@ -404,28 +423,58 @@ package body Unicode.Character_Database is
    new Unicode.Character_Database.Parser.Process_File (Process_Case_Folding_Field); 
 
    Is_NFKC_CF_Record : Boolean := False;
+   type Optional_Normalization_Form (Present : Boolean := False) is
+      record
+         case Present is
+            when True  => Form : Normalization_Form;
+            when False => null;
+         end case;
+      end record;
+   QC_Record : Optional_Normalization_Form;
    
    procedure Process_Normalization_Field
    (Scope  : Code_Point_Range;
-      Number : Unicode.Character_Database.Parser.Field_Number;
-      Field  : Wide_Wide_String) is
+    Number : Unicode.Character_Database.Parser.Field_Number;
+    Field  : Wide_Wide_String) is
    begin
       case Number is
          when 1 =>
             Is_NFKC_CF_Record := Field = "NFKC_CF";
-         when 2 =>
+            QC_Record := (Present => False);
             if not Is_NFKC_CF_Record then
-               return;
-            end if;
-            declare 
-               Value : constant Special_Mapping_Value :=
-                  (if Field = "<code point>" then null
-                   else new Wide_Wide_String'(Parser.Parse_Sequence (Field)));
-            begin
-               for C in Scope.Low .. Scope.High loop
-                  UCD.Nontrivial_NFKC_Casefold (C) := Value;
+               for Form in Normalization_Form loop
+                  if Field = "NF" & Normalization_Form'Wide_Wide_Image (Form) & "_QC" then
+                     QC_Record := (True, Form);
+                     exit;
+                  end if;
                end loop;
-            end;
+            end if;
+         when 2 =>
+            if Is_NFKC_CF_Record then
+               declare 
+                  Value : constant Special_Mapping_Value :=
+                     (if Field = "<code point>" then null
+                      else new Wide_Wide_String'(Parser.Parse_Sequence (Field)));
+               begin
+                  for C in Scope.Low .. Scope.High loop
+                     UCD.Nontrivial_NFKC_Casefold (C) := Value;
+                  end loop;
+               end;
+            elsif QC_Record.Present then
+               declare
+                  New_Value : constant Quick_Check_Result := Parse_Quick_Check_Result (Field);
+                  Set       : Code_Point_Set              := To_Set (Scope);
+                  Data      : Quick_Check_Data.Data renames UCD.Normalization_Quick_Check (QC_Record.Form);
+               begin
+                  for Value in Quick_Check_Result loop
+                     Data.Sets (Value) := Data.Sets (Value) - Set;
+                  end loop;
+                  Data.Sets (New_Value) := Data.Sets (New_Value) or Set;
+                  for C in Scope.Low .. Scope.High loop
+                     Data.Values (C) := New_Value;
+                  end loop;
+               end;              
+            end if;
          when others => null;
       end case;
    end Process_Normalization_Field;

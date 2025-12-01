@@ -36,6 +36,10 @@ package Unicode.Character_Database is
    function Get_Canonical_Combining_Class (UCD: Database; C : Code_Point)
                                            return Canonical_Combining_Class;
 
+   function Normalization_Quick_Check (UCD  : Database;
+                                       Form : Normalization_Form;
+                                       C    : Code_Point) return Quick_Check_Result;
+
 private
    generic
       type Property is (<>);
@@ -52,6 +56,8 @@ private
    package Bidi_Class_Data is new Enumeration_Property_Data (Bidi_Class);
    package Line_Break_Data is new Enumeration_Property_Data (Line_Break);
    package East_Asian_Width_Data is new Enumeration_Property_Data (East_Asian_Width);
+   package Quick_Check_Data is new Enumeration_Property_Data (Quick_Check_Result);
+   type Normalization_Quick_Check_Data is array (Normalization_Form) of Quick_Check_Data.Data;
 
    type Binary_Property_Values is array (Code_Point) of Boolean;
    type Binary_Property_Data is
@@ -76,6 +82,7 @@ private
          Bidi_Classes          : Bidi_Class_Data.Data;
          Line_Breaking_Classes : Line_Break_Data.Data;
          East_Asian_Width_Classes : East_Asian_Width_Data.Data;
+         Normalization_Quick_Check : Normalization_Quick_Check_Data;
          Simple_Lowercase_Mapping : Simple_Mapping := Identity;
          Simple_Titlecase_Mapping : Simple_Mapping := Identity;
          Simple_Uppercase_Mapping : Simple_Mapping := Identity;

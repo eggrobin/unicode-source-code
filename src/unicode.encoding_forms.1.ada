@@ -1,4 +1,8 @@
-With Ada.Iterator_Interfaces;
+with Ada.Finalization;
+with Ada.Iterator_Interfaces;
+with Ada.Strings.Wide_Unbounded;
+
+use all type Ada.Strings.Wide_Unbounded.Unbounded_Wide_String;
 
 package Unicode.Encoding_Forms is
 
@@ -34,7 +38,7 @@ private
 end UTF_16;
 
 generic
-   S : Wide_String;
+   S : in out Wide_String;
 package UTF_16_Wide_Strings is
    subtype Index is Positive range S'First .. S'Last + 1;
    function Has_Element (Position : Index) return Boolean is (Position in S'Range);
@@ -46,6 +50,27 @@ package UTF_16_Wide_Strings is
                              Position : Index) return Index is (Position + 1);
    package UTF_16_S_Iterators is new UTF_16 (Wide_Character, Index, Has_Element, Get_Code_Unit, S_Iterators, S_Iterator);
 end UTF_16_Wide_Strings;
+
+-- An unbounded string which yells to standard output if copied.
+type Noisy_String is new Ada.Finalization.Controlled with
+   record
+      Code_Units : Ada.Strings.Wide_Unbounded.Unbounded_Wide_String;
+   end record;
+overriding procedure Adjust (S : in out Noisy_String);
+
+generic
+   S : in out Noisy_String;
+package UTF_16_Noisy_Strings is
+   subtype Index is Positive;
+   function Has_Element (Position : Index) return Boolean is (Position <= Length (S.Code_Units));
+   function Get_Code_Unit (Position : Index) return Wide_Character is (Element (S.Code_Units, Position));
+   package S_Iterators is new Ada.Iterator_Interfaces (Index, Has_Element);
+   type S_Iterator is new S_Iterators.Forward_Iterator with null record;
+   overriding function First (Object : S_Iterator) return Index is (1);
+   overriding function Next (Object   : S_Iterator;
+                             Position : Index) return Index is (Position + 1);
+   package UTF_16_S_Iterators is new UTF_16 (Wide_Character, Index, Has_Element, Get_Code_Unit, S_Iterators, S_Iterator);
+end UTF_16_Noisy_Strings;
 
 
 end Unicode.Encoding_Forms;

@@ -1,3 +1,5 @@
+with Ada.Text_IO;
+
 with Unicode.Encoding_Forms;
 
 package body Unicode.Encoding_Forms is
@@ -66,5 +68,10 @@ package body UTF_16 is
    function Get_Code_Point (Position : Code_Point_Cursor) return Unicode.Scalar_Value is
       (Position.Code_Point);
 end UTF_16;
+
+overriding procedure Adjust (S : in out Noisy_String) is
+begin
+   Ada.Text_IO.Put_Line ("Adjusting noising string!");
+end Adjust;
 
 end Unicode.Encoding_Forms;
